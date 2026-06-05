@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+!.env.docker.example
+!.env.backend.docker.example
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+*.db
+*.sqlite
+*.sqlite3

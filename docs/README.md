@@ -2,26 +2,40 @@
 
 [中文 README](../README.zh-CN.md) | [English README](../README.md)
 
-This directory records the business design for the Production Material Management System (PMMS). The first-stage documents are written in Chinese because the initial business requirements and operation scenarios are Chinese-first.
+This directory records the business design for AIIS-PMMS. The current active implementation tracker is the root [Backend Core Plan](../PLAN.md), which narrows the first build to the laser-cutting remaining-material backend.
+
+The earlier documents in this directory are retained as business context. When they conflict with the root README, `AGENTS.md`, or `PLAN.md`, the current backend-first laser-cutting scope wins.
 
 ## Documents
 
 | File | Purpose |
 | --- | --- |
+| [../PLAN.md](../PLAN.md) | Active backend-core implementation tracker. |
+| [../PLAN.zh-CN.md](../PLAN.zh-CN.md) | Chinese backend-core implementation tracker. |
+| [../AGENTS.md](../AGENTS.md) | English project-level agent rules. |
+| [../AGENTS.zh-CN.md](../AGENTS.zh-CN.md) | Chinese project-level agent rules. |
 | [00-overview.zh-CN.md](00-overview.zh-CN.md) | Defines the project name, system boundary, and first-stage goal. |
 | [01-glossary.zh-CN.md](01-glossary.zh-CN.md) | Explains MMS, PMMS, MES, MOM, PLM, ERP, WMS, and WCS. |
 | [02-business-scope.zh-CN.md](02-business-scope.zh-CN.md) | Defines the first-stage business modules, core forms, and excluded scope. |
 | [03-data-and-metrics.zh-CN.md](03-data-and-metrics.zh-CN.md) | Defines data dimensions, quantity definitions, metrics, daily settlement, and monthly settlement. |
+| [04-mvp-roadmap.md](04-mvp-roadmap.md) | English MVP roadmap. |
 | [04-mvp-roadmap.zh-CN.md](04-mvp-roadmap.zh-CN.md) | Describes the recommended MVP stages after project initialization. |
 
 ## 中文说明
 
-本目录用于记录生产物料管理系统（PMMS）的业务设计。当前阶段以中文业务文档为主，重点先明确系统定位、业务边界、核心单据、数据口径和后续 MVP 路线。
+本目录用于记录 AIIS-PMMS 的业务设计。当前有效实施跟踪以根目录 [后端核心计划](../PLAN.md) 为准，第一版已收敛为激光开料余料管理后端。
+
+本目录中的早期文档作为业务背景保留；如果它们与根目录 README、`AGENTS.md` 或 `PLAN.md` 冲突，以当前 backend-first 的激光开料范围为准。
 
 | 文件 | 用途 |
 | --- | --- |
+| [../PLAN.md](../PLAN.md) | 当前后端核心功能英文实施跟踪。 |
+| [../PLAN.zh-CN.md](../PLAN.zh-CN.md) | 当前后端核心功能中文实施跟踪。 |
+| [../AGENTS.md](../AGENTS.md) | 英文项目级 agent 规则。 |
+| [../AGENTS.zh-CN.md](../AGENTS.zh-CN.md) | 中文项目级 agent 规则。 |
 | [00-overview.zh-CN.md](00-overview.zh-CN.md) | 定义项目名称、系统边界和第一阶段目标。 |
 | [01-glossary.zh-CN.md](01-glossary.zh-CN.md) | 解释 MMS、PMMS、MES、MOM、PLM、ERP、WMS、WCS。 |
 | [02-business-scope.zh-CN.md](02-business-scope.zh-CN.md) | 定义第一阶段业务模块、核心单据和暂不纳入范围。 |
 | [03-data-and-metrics.zh-CN.md](03-data-and-metrics.zh-CN.md) | 定义数据维度、数量口径、指标、日结和月结输出。 |
+| [04-mvp-roadmap.md](04-mvp-roadmap.md) | 英文 MVP 路线图。 |
 | [04-mvp-roadmap.zh-CN.md](04-mvp-roadmap.zh-CN.md) | 描述项目初始化后的 MVP 推进路线。 |

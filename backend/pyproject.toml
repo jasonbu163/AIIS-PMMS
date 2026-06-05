@@ -1,0 +1,33 @@
+[project]
+name = "aiis-pmms-backend"
+version = "0.1.0"
+description = "Backend API for AIIS-PMMS laser-cutting remaining-material management."
+requires-python = ">=3.11"
+dependencies = [
+  "aioodbc>=0.5.0",
+  "aiosqlite>=0.19.0",
+  "alembic>=1.13.0",
+  "bcrypt>=4.0.0",
+  "fastapi>=0.110.0",
+  "greenlet>=3.0.0",
+  "loguru>=0.7.0",
+  "openpyxl>=3.1.0",
+  "pydantic>=2.5.0",
+  "pydantic-settings>=2.0.0",
+  "pyodbc>=5.0.0",
+  "python-dotenv>=1.0.0",
+  "sqlalchemy>=2.0.0",
+  "uvicorn>=0.27.0",
+]
+
+[dependency-groups]
+dev = [
+  "httpx>=0.26.0",
+  "pytest>=8.0.0",
+  "pytest-asyncio>=0.24.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"

@@ -1,68 +1,143 @@
-# 生产物料管理系统
+# AIIS-PMMS 后端
 
 [English README](README.md)
 
-生产物料管理系统（Production Material Management System，PMMS）是一个文档优先的项目，用于建设面向生产现场的物料闭环管理系统。系统重点覆盖每日生产前备料、生产过程用料、剩余物料、废料登记，以及日/月维度的数据汇总，为后续绩效计算提供可信的数据基础。
+AIIS-PMMS 当前收敛为激光开料余料管理后端。现阶段采用后端优先：先建设核心 API、数据库模型、认证能力和 OpenAPI 契约，再让 Qt 前端、Vue 前端或其他调用方基于 `openapi.json` 对接。
 
-PMMS 是本项目采用的简称。它不像 ERP、MES、WMS、WCS 那样是高度统一的行业标准缩写，但能准确表达本项目的业务范围：位于 ERP、MES、WMS 之间的生产物料管理闭环。
+本项目的业务真相源是 Microsoft SQL Server。Excel 和 PDF 是输入 / 输出凭证，不是主数据库。
 
 ## 项目定位
 
-本项目要回答一个非常具体的生产现场问题：
+本项目要回答一个非常具体的激光开料现场问题：
 
-> 每一天、每张工单、每条产线、每个班组、每个产品和每种物料，计划用了多少、备了多少、领了多少、实际用了多少、剩了多少、退了多少、废了多少、差异是多少、责任归属是谁？
+> 每天激光开料前有哪些整料和可复用余料可用，系统应生成哪些可导入设备的 `Template.xlsx`，生产报告记录了哪些加工数据，生产后确认了多少余料和废料？
 
 系统应支持：
 
-- 每日生产前根据生产任务和标准用料生成备料清单。
-- 记录领料、投料、实际用料、剩料、退料和废料。
-- 按日、月统计用料、剩料、废料和差异数据。
-- 为后续班组、产线、工单、产品、物料等维度的绩效计算提供基础数据。
+- 认证和受保护的后端 API。
+- 整料、余料和废料库存记录。
+- 每日激光开料备料。
+- 导出设备可导入的 `Template.xlsx`。
+- 归档并解析激光生产报告 PDF。
+- 生产后确认可复用余料和废料。
+- 形成日结 / 月结 / 绩效结算所需的基础统计数据。
 
 ## 系统范围
 
-第一阶段不做完整 ERP、完整 MES、完整 WMS，也不做 WCS。系统应聚焦生产物料闭环：
+第一阶段不做完整 ERP、完整 MES、完整 WMS，也不做 WCS。系统应聚焦激光开料余料闭环：
 
 ```text
-生产任务 / 工单
+今日排产任务
     ↓
-BOM / 标准用料
+选择整料 + 可复用往日余料
     ↓
-每日备料清单
+生成可导入激光开料机的 Template.xlsx
     ↓
-领料 / 发料 / 投料
+激光设备生产
     ↓
-实际用料记录
+导入生产报告 PDF
     ↓
-剩料登记 / 退料 / 复用
+识别设备运行参数和加工信息
     ↓
-废料登记 / 原因分类
+人工确认余料 / 废料
     ↓
-日结 / 月结 / 损耗统计
+日结 / 月结 / 绩效结算数据
     ↓
 绩效计算数据
 ```
 
-## 第一阶段目标
+## 后端方向
 
-最小可用目标是：
+当前后端默认方案：
 
-> 每天知道计划该用多少料，实际领了多少，用了多少，剩了多少，废了多少，差异多少，责任班组、产线、工单是谁。
+- Framework：FastAPI。
+- ORM / Migration：SQLAlchemy 2.x + Alembic。
+- 数据库：生产和现场目标为 Microsoft SQL Server 2016。
+- DB driver：`mssql+pyodbc`。
+- API 契约：FastAPI 自动暴露 `/openapi.json`。
+- 响应信封：`code / message / data`，业务失败使用稳定 `errorCode`。
+- Auth：JWT Bearer + refresh token + bcrypt，MVP 使用简单角色权限。
+- 运行配置：宿主机本地运行使用 `.env`；Docker 开发栈使用 `.env.docker`。
+- 开发环境：`backend/docker-compose.dev.yml` 同时启动 backend API 容器和本地 SQL Server 兼容开发容器；最终交付的 backend 可执行程序仍通过 `.env` 连接现场数据库。
 
-第一阶段应优先沉淀项目边界、数据定义、核心单据和统计口径，再决定具体后端、前端、数据库和部署方案。
+因为现场目标是 SQL Server 2016，migration 和查询默认保持 SQL Server 2016 兼容；除非明确批准，否则不依赖更高版本才支持的数据库能力。
+
+## 开发运行分层
+
+运行配置按 backend 进程所在位置拆分：
+
+| 运行方式 | Env 文件 | 入口 |
+| --- | --- | --- |
+| 宿主机本地运行 | `backend/.env` | `cd backend && uv run uvicorn main:app --reload` |
+| Docker dev 栈 | `backend/.env.docker` | `cd backend && docker compose -f docker-compose.dev.yml up --build` |
+| 后续 backend-only 容器 | `backend/.env.backend.docker` | 通过 `host.docker.internal` 或真实内网 IP / DNS 连接宿主机 / 现场 MSSQL |
+
+提交到 GitHub 的只包括示例文件：`backend/.env.example`、`backend/.env.docker.example`、`backend/.env.backend.docker.example`。真实 `.env*` 文件都被 Git 忽略。
+
+Docker dev 数据库密码规划为：
+
+```env
+MSSQL_SA_PASSWORD=AIIS_PMMS_Dev_789!
+DB_PASSWORD=AIIS_PMMS_Dev_789!
+```
+
+Docker dev 栈固定使用 Compose project name `aiis-pmms`，避免和其他 backend 项目冲突。该栈只保留两个常驻容器：`api` 和 `mssql-dev`；开发数据库存在性由 API 容器启动前确认，然后再执行 migration。API 对宿主机发布端口为 `18080`，容器内仍监听 `8000`。该栈使用 SQL Server 2022 容器作为开发便利。MSSQL 服务固定为 `linux/amd64`，因为官方 SQL Server Linux 镜像主要面向 AMD64；Apple Silicon 上可能通过 Docker Desktop 仿真运行。生产 / 现场兼容性仍必须以真实 SQL Server 2016 验证为准。
+
+## 保底账号
+
+后端必须支持一个可通过 `.env` 初始化或重置的保底账号：
+
+- 用户名：`root`
+- 默认明文密码：`#789@root`
+
+真实 `.env` 不提交到 GitHub，可以直接填写明文密码，例如：
+
+```env
+BOOTSTRAP_ROOT_USERNAME=root
+BOOTSTRAP_ROOT_PASSWORD=#789@root
+```
+
+推送到 GitHub 的 `.env.example` 只保留变量名和占位说明，不保存现场真实 `.env`。实现时不要把 `#789@root` 写死到业务代码；`.env` 中的明文只作为初始化 / 重置输入，写入用户表的密码仍应使用后端认证模块的正式密码哈希策略。
+
+## 核心数据方向
+
+`resources/Template.xlsx` 是第一版设备导出契约，当前样例表头为：
+
+| 列 | 表头 | 含义 |
+| --- | --- | --- |
+| A | 板材名称 | 板材名称或行项目编号 |
+| B | 图纸路径 | 图纸或加工文件路径 |
+| C | 宽 | 板材宽度 |
+| D | 长 | 板材长度 |
+| E | 材质 | 材质牌号 |
+| F | 厚度 | 材料厚度 |
+| G | 数量 | 板材数量 |
+
+第一版后端数据库应优先覆盖：
+
+- 用户和 token 撤销记录。
+- 材料定义和材质牌号。
+- 整料和余料库存。
+- 每日备料单和备料明细。
+- 导出的 `Template.xlsx` 文件元数据。
+- 上传的生产报告 PDF 元数据和解析指标。
+- 余料确认、废料确认和日结记录。
 
 ## 文档目录
 
+- [后端核心计划](PLAN.md)
+- [后端核心计划中文](PLAN.zh-CN.md)
 - [文档入口](docs/README.md)
 - [系统定位](docs/00-overview.zh-CN.md)
 - [术语与系统关系](docs/01-glossary.zh-CN.md)
 - [业务范围](docs/02-business-scope.zh-CN.md)
 - [数据与指标](docs/03-data-and-metrics.zh-CN.md)
 - [MVP 路线图](docs/04-mvp-roadmap.zh-CN.md)
+- [MVP Roadmap English](docs/04-mvp-roadmap.md)
 
 ## 当前状态
 
-当前仓库处于项目初始化阶段。
+当前仓库已进入后端核心功能实现阶段。后端骨架、认证、Docker dev 栈、第一版物料 / 余料库存 API、受保护的数据库维护 API，以及每日备料 `Template.xlsx` 导出已落地。
 
 已完成：
 
@@ -71,21 +146,36 @@ BOM / 标准用料
 - 根目录中英文 README。
 - MVP 路线图。
 - Git 仓库初始化。
+- 后端优先方向和跟踪计划。
+- P0 后端骨架和 API 契约。
+- P1 认证与 root 保底账号。
+- P2 物料 / 余料库存 API 第一版。
+- P3 受保护的数据库状态 / 初始化 / 升级 API。
+- P4 每日备料单、备料明细、库存来源预留和 `Template.xlsx` 导出。
 
-尚未决定：
+后端核心已决定：
 
-- 后端框架。
-- 前端框架。
-- 数据库。
-- 部署方式。
-- 与 ERP、MES、WMS、WCS 的集成边界。
+- FastAPI 后端。
+- 现场目标数据库为 Microsoft SQL Server 2016。
+- 宿主机本地运行和打包运行通过 `.env` 配置，Docker 开发通过 `.env.docker` 配置。
+- 通过 OpenAPI JSON 作为 Qt / Vue 调用方的接口契约。
+- `backend/docker-compose.dev.yml` 只作为开发便利，不作为最终交付依赖。
+- 受保护的数据库维护 API 用于不方便运行源码级 Alembic 命令的现场；调用时必须具备 admin Bearer 认证、`X-Maintenance-Token`，并开启 `ENABLE_MAINTENANCE_API=true`。
+- `Template.xlsx` 导出以仓库中的样例文件作为列契约，生成文件写入被 Git 忽略的 backend storage。
+- Docker dev 使用源码 bind mount 加容器内 `.venv` named volume。普通源码修改自动热更新；普通 Python 依赖变化在宿主机执行 `uv add` / `uv remove` 后，重启 `api`，由容器内 `uv sync` 更新自己的 Linux venv。
+
+暂缓：
+
+- 具体 Qt 或 Vue 前端实现。
+- 完整 ERP / MES / WMS 集成。
+- PDF 批处理或耗时任务明确前，暂不引入 Worker / Celery。
+- 最终可执行打包工具选择。
 
 ## 建议下一步
 
-下一步建议进入 MVP 需求与数据模型阶段：
+继续进入 `PLAN.md` 的 P5：
 
-1. 确认第一阶段用户角色和业务流程。
-2. 定义核心单据和状态流转。
-3. 草拟数据库实体。
-4. 选择技术栈。
-5. 生成第一版后端和前端项目骨架。
+1. 增加生产报告 PDF 上传 / 归档记录。
+2. 保存解析状态和预留解析结果字段。
+3. 增加余料确认和废料确认接口。
+4. 确认后的余料要能继续被后续备料单选择。

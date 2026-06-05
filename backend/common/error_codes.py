@@ -1,0 +1,26 @@
+from enum import Enum
+
+
+class ErrorCode(str, Enum):
+    INVALID_CREDENTIALS = "invalid_credentials"
+    INVALID_TOKEN = "invalid_token"
+    TOKEN_REVOKED = "token_revoked"
+    USER_DISABLED = "user_disabled"
+    USER_NOT_FOUND = "user_not_found"
+    USER_ALREADY_EXISTS = "user_already_exists"
+    ROOT_REQUIRED = "root_required"
+    USER_PERMISSION_DENIED = "user_permission_denied"
+    CANNOT_DELETE_SELF = "cannot_delete_self"
+    OLD_PASSWORD_REQUIRED = "old_password_required"
+    INVALID_OLD_PASSWORD = "invalid_old_password"
+    MATERIAL_NOT_FOUND = "material_not_found"
+    MATERIAL_ALREADY_EXISTS = "material_already_exists"
+    INVENTORY_ITEM_NOT_FOUND = "inventory_item_not_found"
+    INVALID_INVENTORY_STATUS = "invalid_inventory_status"
+    MAINTENANCE_API_DISABLED = "maintenance_api_disabled"
+    INVALID_MAINTENANCE_TOKEN = "invalid_maintenance_token"
+    PREPARATION_ORDER_NOT_FOUND = "preparation_order_not_found"
+    PREPARATION_ITEM_NOT_FOUND = "preparation_item_not_found"
+    INVALID_PREPARATION_STATUS = "invalid_preparation_status"
+    INVALID_PREPARATION_SOURCE = "invalid_preparation_source"
+    TEMPLATE_EXPORT_NOT_FOUND = "template_export_not_found"
