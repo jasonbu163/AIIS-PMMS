@@ -59,7 +59,7 @@ DB_PORT=1433
 DB_NAME=AIIS_PMMS
 DB_USER=sa
 DB_PASSWORD=change-me
-DB_DRIVER=ODBC Driver 17 for SQL Server
+DB_DRIVER=ODBC Driver 18 for SQL Server
 JWT_SECRET_KEY=change-me-in-site-env
 BOOTSTRAP_ROOT_USERNAME=root
 BOOTSTRAP_ROOT_PASSWORD=change-me-in-real-env
@@ -89,6 +89,14 @@ DB_PASSWORD=AIIS_PMMS_Dev_789!
 This is suitable for packaged-service smoke tests, maintenance API initialization tests, and API flow checks. It is not a production compatibility proof: the container uses SQL Server 2022, while the site target remains Microsoft SQL Server 2016. Switch the same packaged backend `.env` to the real site host, port, user, and password when the site database is ready.
 
 `docker-compose.mssql.yml` reads `.env.mssql.example` by default. Copy it to `.env.mssql` only when you need local overrides that should stay ignored by Git.
+
+For a backend-only Docker service instead of the Windows executable, use:
+
+```powershell
+docker compose -f docker-compose.backend.yml up --build
+```
+
+That compose file starts only the backend container, reads `.env.backend.docker.example`, and overlays `.env.backend.docker` when present. It does not include a database service.
 
 ## Run
 

@@ -11,10 +11,10 @@ Host-local backend:
 ```bash
 uv run pytest
 uv run alembic heads
-uv run uvicorn main:app --reload
+uv run python run.py
 ```
 
-Host-local project commands should use `uv run` so tests, migrations, and the dev server all use the project runtime instead of the agent/system Python.
+Host-local project commands should use `uv run` so tests, migrations, and the dev server all use the project runtime instead of the agent/system Python. Use `uv run python run.py` for local development so `SERVER_HOST` and `SERVER_PORT` are read from `backend/.env`. Running `uv run uvicorn main:app --reload` directly uses Uvicorn CLI defaults unless `--host` and `--port` are passed explicitly.
 
 Docker development stack:
 
@@ -41,6 +41,14 @@ Rebuild is still required after Dockerfile, base image, ODBC driver, apt package
 
 `mssql-dev` is pinned to `linux/amd64` because the official SQL Server Linux image is AMD64-oriented. On Apple Silicon it may run through Docker Desktop emulation.
 
+Backend-only container:
+
+```bash
+docker compose -f docker-compose.backend.yml up --build
+```
+
+This starts only the backend API from the Docker image, without a source bind mount and without a database container. It reads `.env.backend.docker.example` by default and overlays `.env.backend.docker` when present. Use `DB_HOST=host.docker.internal` when the database is exposed on the host, such as the standalone MSSQL simulation below; use the real LAN IP/DNS when connecting to a site SQL Server.
+
 Standalone MSSQL simulation for packaged backend testing:
 
 ```bash
@@ -59,6 +67,50 @@ DB_PASSWORD=AIIS_PMMS_Dev_789!
 This standalone container is a simulation database only. It uses SQL Server 2022 for local availability; production/site compatibility still targets Microsoft SQL Server 2016 and must be verified against the real target database when it becomes available.
 
 `docker-compose.mssql.yml` reads `.env.mssql.example` by default. Copy it to `.env.mssql` only when you need local overrides that should stay ignored by Git.
+
+## Database Initialization
+
+A newly started MSSQL container only provides the SQL Server instance and data volume. It does not automatically create the `AIIS_PMMS` database or application tables unless the backend startup path runs the initialization commands.
+
+The full Docker dev stack already does this in the `api` container startup command:
+
+```bash
+python -m scripts.ensure_database
+alembic upgrade head
+```
+
+When running the backend from source on the host, or when pointing the packaged executable at a fresh MSSQL instance, run the same initialization from `backend/` before starting normal use:
+
+```bash
+uv run python -m scripts.ensure_database
+uv run alembic upgrade head
+uv run alembic current
+```
+
+`scripts.ensure_database` creates `DB_NAME` when it is missing and skips it when it already exists. `alembic upgrade head` creates or upgrades the schema incrementally. `alembic current` should report the current revision with `(head)`.
+
+Keep `DATABASE_URL` empty for the normal structured `DB_*` settings. `DATABASE_URL` is only for a complete SQLAlchemy connection URL, not a host address field. Do not put a bare IP address there.
+
+A full MSSQL `DATABASE_URL` looks like this:
+
+```env
+DATABASE_URL=mssql+aioodbc://sa:your-password@192.168.103.15:1433/AIIS_PMMS?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes
+```
+
+Because that format is easy to get wrong, the recommended project configuration is to leave it empty and use separate fields instead:
+
+```env
+DATABASE_URL=
+DB_HOST=192.168.103.15
+DB_PORT=1433
+DB_NAME=AIIS_PMMS
+DB_USER=sa
+DB_PASSWORD=your-password
+DB_DRIVER=ODBC Driver 18 for SQL Server
+DB_TRUST_SERVER_CERTIFICATE=true
+```
+
+If the site can only operate the packaged service and cannot run source-level commands, temporarily use the protected maintenance endpoints instead: enable `ENABLE_MAINTENANCE_API=true`, set `MAINTENANCE_TOKEN`, log in as an admin user, call `POST /api/v1/admin/database/initialize` and `POST /api/v1/admin/database/upgrade`, then disable the maintenance API again.
 
 The current deployment assumption is a China site runtime. API and SQL Server processes should run with `TZ=Asia/Shanghai` so database `GETDATE()` / SQLAlchemy `func.now()` and backend `datetime.now()` produce the same site-local date and time. Docker dev sets this through `.env.docker` and `docker-compose.dev.yml`; host-local and packaged deployments should keep the OS / SQL Server host timezone aligned with `Asia/Shanghai`.
 

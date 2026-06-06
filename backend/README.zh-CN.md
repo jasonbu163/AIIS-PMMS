@@ -11,10 +11,10 @@
 ```bash
 uv run pytest
 uv run alembic heads
-uv run uvicorn main:app --reload
+uv run python run.py
 ```
 
-宿主机本地项目命令应使用 `uv run`，确保测试、迁移和开发服务器都使用项目运行时，而不是 Agent 或系统 Python。
+宿主机本地项目命令应使用 `uv run`，确保测试、迁移和开发服务器都使用项目运行时，而不是 Agent 或系统 Python。本地开发启动使用 `uv run python run.py`，这样会从 `backend/.env` 读取 `SERVER_HOST` 和 `SERVER_PORT`。如果直接运行 `uv run uvicorn main:app --reload`，Uvicorn CLI 会使用自己的默认端口，除非你显式传入 `--host` 和 `--port`。
 
 Docker 开发栈：
 
@@ -41,6 +41,14 @@ docker compose -f docker-compose.dev.yml restart api
 
 `mssql-dev` 固定为 `linux/amd64`，因为官方 SQL Server Linux 镜像主要面向 AMD64。Apple Silicon 上可能通过 Docker Desktop 仿真运行。
 
+Backend-only 单后端容器：
+
+```bash
+docker compose -f docker-compose.backend.yml up --build
+```
+
+这个入口只从 Docker 镜像启动后端 API，不 bind mount 源码，也不自带数据库容器。它默认读取 `.env.backend.docker.example`，存在 `.env.backend.docker` 时再覆盖。数据库暴露在宿主机上时使用 `DB_HOST=host.docker.internal`，例如下方独立 MSSQL 模拟库；连接现场 SQL Server 时使用真实内网 IP / DNS。
+
 用于打包后端测试的独立 MSSQL 模拟库：
 
 ```bash
@@ -59,6 +67,50 @@ DB_PASSWORD=AIIS_PMMS_Dev_789!
 这个独立容器只作为模拟数据库。它为了本地可用性使用 SQL Server 2022；生产 / 现场兼容性目标仍是 Microsoft SQL Server 2016，真实目标数据库可用后仍必须再验证。
 
 `docker-compose.mssql.yml` 默认读取 `.env.mssql.example`。只有需要保留本地覆盖配置、且不提交到 Git 时，才复制为 `.env.mssql`。
+
+## 数据库初始化
+
+新启动的 MSSQL 容器只提供 SQL Server 实例和数据卷。除非后端启动路径执行初始化命令，否则它不会自动创建 `AIIS_PMMS` 数据库，也不会自动建应用表。
+
+完整 Docker dev 栈已经在 `api` 容器启动命令中执行：
+
+```bash
+python -m scripts.ensure_database
+alembic upgrade head
+```
+
+当你在宿主机以源码方式运行后端，或让打包后的可执行文件连接一个全新的 MSSQL 实例时，先在 `backend/` 目录手动执行同样的初始化：
+
+```bash
+uv run python -m scripts.ensure_database
+uv run alembic upgrade head
+uv run alembic current
+```
+
+`scripts.ensure_database` 会在 `DB_NAME` 不存在时创建数据库，已存在时跳过。`alembic upgrade head` 会以增量方式创建或升级表结构。`alembic current` 应显示当前 revision，并带有 `(head)`。
+
+正常使用结构化 `DB_*` 配置时，保持 `DATABASE_URL` 为空。`DATABASE_URL` 只用于完整 SQLAlchemy 连接串，不是“数据库主机地址”字段，不要填裸 IP。
+
+一个完整 MSSQL `DATABASE_URL` 大概长这样：
+
+```env
+DATABASE_URL=mssql+aioodbc://sa:your-password@192.168.103.15:1433/AIIS_PMMS?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes
+```
+
+这个格式比较容易写错，所以本项目推荐保持为空，改用拆开的字段：
+
+```env
+DATABASE_URL=
+DB_HOST=192.168.103.15
+DB_PORT=1433
+DB_NAME=AIIS_PMMS
+DB_USER=sa
+DB_PASSWORD=your-password
+DB_DRIVER=ODBC Driver 18 for SQL Server
+DB_TRUST_SERVER_CERTIFICATE=true
+```
+
+如果现场只能运行打包服务，不能执行源码级命令，则临时使用受保护维护端点：设置 `ENABLE_MAINTENANCE_API=true`，配置 `MAINTENANCE_TOKEN`，以 admin 用户登录后调用 `POST /api/v1/admin/database/initialize` 和 `POST /api/v1/admin/database/upgrade`，完成后再关闭维护 API。
 
 当前部署假设是中国现场运行时。API 和 SQL Server 进程应使用 `TZ=Asia/Shanghai`，使数据库 `GETDATE()` / SQLAlchemy `func.now()` 与后端 `datetime.now()` 产生一致的现场本地日期时间。Docker dev 通过 `.env.docker` 和 `docker-compose.dev.yml` 设置；宿主机本地运行和打包部署应保持 OS / SQL Server 主机时区与 `Asia/Shanghai` 对齐。
 

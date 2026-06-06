@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     db_name: str = "AIIS_PMMS"
     db_user: str = "sa"
     db_password: str = ""
-    db_driver: str = "ODBC Driver 17 for SQL Server"
+    db_driver: str = "ODBC Driver 18 for SQL Server"
     db_trust_server_certificate: bool = True
     sqlite_database: str = "./pmms-dev.db"
     storage_dir: str = "storage"

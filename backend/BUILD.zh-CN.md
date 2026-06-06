@@ -59,7 +59,7 @@ DB_PORT=1433
 DB_NAME=AIIS_PMMS
 DB_USER=sa
 DB_PASSWORD=change-me
-DB_DRIVER=ODBC Driver 17 for SQL Server
+DB_DRIVER=ODBC Driver 18 for SQL Server
 JWT_SECRET_KEY=change-me-in-site-env
 BOOTSTRAP_ROOT_USERNAME=root
 BOOTSTRAP_ROOT_PASSWORD=change-me-in-real-env
@@ -89,6 +89,14 @@ DB_PASSWORD=AIIS_PMMS_Dev_789!
 这种方式适合打包服务冒烟测试、维护 API 初始化测试和 API 流程检查。它不是生产兼容性证明：容器使用 SQL Server 2022，而现场目标仍是 Microsoft SQL Server 2016。现场数据库准备好后，把同一个打包后端 `.env` 切换为真实现场主机、端口、账号和密码即可。
 
 `docker-compose.mssql.yml` 默认读取 `.env.mssql.example`。只有需要保留本地覆盖配置、且不提交到 Git 时，才复制为 `.env.mssql`。
+
+如果不是 Windows 可执行文件，而是单后端 Docker 服务，使用：
+
+```powershell
+docker compose -f docker-compose.backend.yml up --build
+```
+
+该 compose 只启动后端容器，默认读取 `.env.backend.docker.example`，存在 `.env.backend.docker` 时再覆盖；它不包含数据库服务。
 
 ## 启动
 

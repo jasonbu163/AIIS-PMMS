@@ -69,7 +69,7 @@ Runtime configuration is split by where the backend process runs:
 
 | Runtime | Env file | Entry |
 | --- | --- | --- |
-| Host-local backend | `backend/.env` | `cd backend && uv run uvicorn main:app --reload` |
+| Host-local backend | `backend/.env` | `cd backend && uv run python run.py` |
 | Docker dev stack | `backend/.env.docker` | `cd backend && docker compose -f docker-compose.dev.yml up --build` |
 | Backend-only container later | `backend/.env.backend.docker` | Connects to host/site MSSQL through `host.docker.internal` or a real LAN IP/DNS |
 
