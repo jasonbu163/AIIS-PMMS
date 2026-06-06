@@ -1,6 +1,6 @@
 # AIIS-PMMS Backend
 
-[中文说明](../README.zh-CN.md)
+[中文说明](README.zh-CN.md)
 
 This directory contains the backend API implementation for the backend-first AIIS-PMMS plan.
 
