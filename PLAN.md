@@ -23,7 +23,7 @@ The first backend version focuses only on the laser-cutting remaining-material l
 Prioritize:
 
 - Authentication and basic user management.
-- Material specs, whole-sheet inventory, leftover inventory, and scrap records.
+- Material specs, sheet-material inventory covering whole sheets and reusable leftovers, and scrap records.
 - Cutting-template data structures based on `resources/Template.xlsx`.
 - Daily preparation orders and `Template.xlsx` export.
 - Laser production report PDF upload records and reserved parsed-result tables.
@@ -75,7 +75,7 @@ First-stage tables should start with the following list and evolve from actual s
 - `users`: account, password hash, display name, role, status.
 - `auth_token_revocations`: revoked token `jti`, expiry, revoke reason.
 - `materials`: material grade, thickness, spec description, default unit, enabled status.
-- `material_inventory_items`: whole-sheet / leftover inventory, width, length, thickness, material, quantity, source, location, status, reusability.
+- `material_inventory_items`: sheet-material inventory items covering whole sheets and leftovers, width, length, thickness, material, quantity, source, location, status, reusability. Current sheet-oriented dimensions come from `Template.xlsx`; pipe/profile fields should be planned separately later.
 - `cutting_preparation_orders`: daily preparation order header, date, status, creator, generated time, exported file.
 - `cutting_preparation_items`: preparation details matching Template.xlsx columns: sheet name, drawing path, width, length, material, thickness, quantity, and inventory source.
 - `laser_report_files`: production report PDF archive and parse status.
@@ -126,20 +126,20 @@ Verification:
 - [x] Revoked or expired tokens cannot access protected endpoints.
 - [x] OpenAPI marks BearerAuth.
 
-### P2 - Materials and Leftover Inventory
+### P2 - Materials and Sheet-Material Inventory
 
-Goal: create the core tables and APIs for the remaining-material database.
+Goal: create the core tables and APIs for sheet-material inventory. The first version covers whole sheets and leftovers; pipe/profile inventory is deferred.
 
 Tasks:
 
 - [x] Implement material / thickness / spec base data.
-- [x] Implement whole-sheet and leftover inventory CRUD.
+- [x] Implement sheet-material inventory CRUD for whole sheets and leftovers.
 - [x] Implement status transitions: `available`, `reserved`, `consumed`, `scrapped`, `voided`.
-- [x] Support reusable leftover queries by material, thickness, size, status, and location.
+- [x] Support inventory queries by material, thickness, size, status, location, and inventory type.
 
 Verification:
 
-- [x] Leftovers can be created, queried, updated, and voided.
+- [x] Inventory items can be created, queried, updated, and voided.
 - [x] Status keys are stable; Chinese text is only for display-layer translation.
 - [ ] SQL Server 2016 migration can run.
 

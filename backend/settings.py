@@ -1,12 +1,32 @@
 from functools import lru_cache
+from pathlib import Path
+import sys
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+def get_site_runtime_root() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parent
+
+
+def get_packaged_resource_root() -> Path:
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return Path(sys._MEIPASS).resolve()
+    return Path(__file__).resolve().parent
+
+
+def get_project_root() -> Path:
+    if getattr(sys, "frozen", False):
+        return get_packaged_resource_root()
+    return get_site_runtime_root().parent
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=get_site_runtime_root() / ".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -14,6 +34,8 @@ class Settings(BaseSettings):
     app_env: str = "development"
     app_name: str = "AIIS-PMMS Backend"
     api_prefix: str = "/api/v1"
+    server_host: str = "0.0.0.0"
+    server_port: int = 8000
 
     database_url: str = ""
     db_dialect: str = "mssql"

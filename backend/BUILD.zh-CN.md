@@ -1,0 +1,101 @@
+# AIIS-PMMS 后端打包
+
+[English](BUILD.md)
+
+本说明用于把后端 API 打包成适合 Windows 现场运行的可执行文件，适用于现场不能使用 Docker 的情况。
+
+## 环境准备
+
+打包机使用 Windows、Python 3.11+、`uv`，目标机器需安装 Microsoft ODBC Driver for SQL Server。SQL Server 仍然是业务数据源；打包产物只包含 API 服务、Alembic 迁移和必要运行资源。
+
+在 `backend/` 目录同步依赖：
+
+```powershell
+uv sync
+```
+
+## 打包
+
+在 `backend/` 目录运行：
+
+```powershell
+uv run --with pyinstaller python build.py
+```
+
+脚本打包的是生产入口 `main.py`，不会打包开发用的 reload 启动命令。如需为受控现场包复制本机真实 `backend/.env`：
+
+```powershell
+uv run --with pyinstaller python build.py --include-env
+```
+
+不加 `--include-env` 时，产物只包含 `.env.example`。现场运行前请复制或重命名为 `.env` 并填写真实配置。
+
+## 产物目录
+
+打包输出目录：
+
+```text
+backend/dist/aiis-pmms-backend/
+```
+
+关键文件应包含：
+
+- `aiis-pmms-backend.exe`
+- `.env` 或 `.env.example`
+- `storage/exports/templates/`
+- 已打入包内的 `alembic.ini`、`alembic/` 和 `resources/Template.xlsx`
+
+## 现场配置
+
+编辑可执行文件同目录的 `.env`。至少配置：
+
+```env
+APP_ENV=production
+SERVER_HOST=0.0.0.0
+SERVER_PORT=8000
+DB_DIALECT=mssql
+DB_HOST=127.0.0.1
+DB_PORT=1433
+DB_NAME=AIIS_PMMS
+DB_USER=sa
+DB_PASSWORD=change-me
+DB_DRIVER=ODBC Driver 17 for SQL Server
+JWT_SECRET_KEY=change-me-in-site-env
+BOOTSTRAP_ROOT_USERNAME=root
+BOOTSTRAP_ROOT_PASSWORD=change-me-in-real-env
+ENABLE_MAINTENANCE_API=false
+MAINTENANCE_TOKEN=change-me-maintenance-token
+```
+
+真实现场 `.env` 不要提交到 Git。
+
+## 启动
+
+进入 `backend/dist/aiis-pmms-backend/` 后运行：
+
+```powershell
+.\aiis-pmms-backend.exe
+```
+
+最小冒烟检查：
+
+```powershell
+curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/openapi.json
+```
+
+## 数据库升级
+
+源码环境首选命令仍是：
+
+```powershell
+uv run alembic upgrade head
+```
+
+如果现场只能使用打包服务，可临时开启受保护维护 API，使用管理员 bearer token 和 `X-Maintenance-Token` 调用数据库维护接口。维护流程是增量、幂等的，不提供清库、drop、truncate 或 reset 能力。
+
+## 常见问题
+
+- `No module named PyInstaller`：使用带 `--with pyinstaller` 的打包命令。
+- SQL Server 连接失败：安装 `.env` 中 `DB_DRIVER` 指定的 ODBC 驱动，并检查主机、端口、账号、密码和 SQL Server TCP 设置。
+- 维护 API 提示未启用：只在受控初始化或升级期间设置 `ENABLE_MAINTENANCE_API=true`，完成后再关闭。

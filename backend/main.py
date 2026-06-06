@@ -59,3 +59,15 @@ async def health() -> StandardResponse[dict[str, str]]:
 
 
 app.include_router(api_router, prefix=get_settings().api_prefix)
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    settings = get_settings()
+    uvicorn.run(
+        app,
+        host=settings.server_host,
+        port=settings.server_port,
+        reload=False,
+    )

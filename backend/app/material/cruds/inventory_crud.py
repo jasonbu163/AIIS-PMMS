@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.material.models.inventory_item import MaterialInventoryItem
@@ -16,9 +16,55 @@ async def get_inventory_item(
     return await db.get(MaterialInventoryItem, inventory_item_id)
 
 
+async def get_inventory_item_by_code(
+    db: AsyncSession,
+    inventory_code: str,
+) -> Optional[MaterialInventoryItem]:
+    result = await db.execute(
+        select(MaterialInventoryItem).where(
+            MaterialInventoryItem.inventory_code == inventory_code,
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def list_inventory_items_by_codes(
+    db: AsyncSession,
+    inventory_codes: list[str],
+) -> list[tuple[MaterialInventoryItem, str]]:
+    result = await db.execute(
+        select(MaterialInventoryItem, Material.material_grade)
+        .join(Material, Material.id == MaterialInventoryItem.material_id)
+        .where(MaterialInventoryItem.inventory_code.in_(inventory_codes))
+    )
+    return [(row[0], row[1]) for row in result.all()]
+
+
+async def get_inventory_item_by_spec(
+    db: AsyncSession,
+    *,
+    material_id: int,
+    width: float,
+    length: float,
+    thickness: float,
+) -> Optional[MaterialInventoryItem]:
+    result = await db.execute(
+        select(MaterialInventoryItem)
+        .where(
+            MaterialInventoryItem.material_id == material_id,
+            MaterialInventoryItem.width == width,
+            MaterialInventoryItem.length == length,
+            MaterialInventoryItem.thickness == thickness,
+        )
+        .order_by(MaterialInventoryItem.id.asc())
+    )
+    return result.scalars().first()
+
+
 def _apply_filters(
     query: Select[tuple[MaterialInventoryItem]],
     *,
+    inventory_code: Optional[str],
     material_id: Optional[int],
     inventory_type: Optional[str],
     status: Optional[str],
@@ -28,6 +74,8 @@ def _apply_filters(
     material_grade: Optional[str],
     thickness: Optional[float],
 ) -> Select[tuple[MaterialInventoryItem]]:
+    if inventory_code is not None:
+        query = query.where(MaterialInventoryItem.inventory_code == inventory_code)
     if material_id is not None:
         query = query.where(MaterialInventoryItem.material_id == material_id)
     if inventory_type is not None:
@@ -50,6 +98,7 @@ def _apply_filters(
 async def list_inventory_items(
     db: AsyncSession,
     *,
+    inventory_code: Optional[str] = None,
     material_id: Optional[int] = None,
     inventory_type: Optional[str] = None,
     status: Optional[str] = None,
@@ -66,6 +115,7 @@ async def list_inventory_items(
     )
     query = _apply_filters(
         query,
+        inventory_code=inventory_code,
         material_id=material_id,
         inventory_type=inventory_type,
         status=status,
@@ -75,6 +125,76 @@ async def list_inventory_items(
         material_grade=material_grade,
         thickness=thickness,
     )
+    result = await db.execute(query)
+    return [(row[0], row[1]) for row in result.all()]
+
+
+async def count_inventory_items(
+    db: AsyncSession,
+    *,
+    inventory_code: Optional[str] = None,
+    material_id: Optional[int] = None,
+    inventory_type: Optional[str] = None,
+    status: Optional[str] = None,
+    reusable: Optional[bool] = None,
+    min_width: Optional[float] = None,
+    min_length: Optional[float] = None,
+    material_grade: Optional[str] = None,
+    thickness: Optional[float] = None,
+) -> int:
+    query = select(func.count()).select_from(MaterialInventoryItem).join(
+        Material,
+        Material.id == MaterialInventoryItem.material_id,
+    )
+    query = _apply_filters(
+        query,
+        inventory_code=inventory_code,
+        material_id=material_id,
+        inventory_type=inventory_type,
+        status=status,
+        reusable=reusable,
+        min_width=min_width,
+        min_length=min_length,
+        material_grade=material_grade,
+        thickness=thickness,
+    )
+    result = await db.execute(query)
+    return int(result.scalar_one())
+
+
+async def page_inventory_items(
+    db: AsyncSession,
+    *,
+    page: int,
+    page_size: int,
+    inventory_code: Optional[str] = None,
+    material_id: Optional[int] = None,
+    inventory_type: Optional[str] = None,
+    status: Optional[str] = None,
+    reusable: Optional[bool] = None,
+    min_width: Optional[float] = None,
+    min_length: Optional[float] = None,
+    material_grade: Optional[str] = None,
+    thickness: Optional[float] = None,
+) -> list[tuple[MaterialInventoryItem, str]]:
+    query = (
+        select(MaterialInventoryItem, Material.material_grade)
+        .join(Material, Material.id == MaterialInventoryItem.material_id)
+        .order_by(MaterialInventoryItem.id.desc())
+    )
+    query = _apply_filters(
+        query,
+        inventory_code=inventory_code,
+        material_id=material_id,
+        inventory_type=inventory_type,
+        status=status,
+        reusable=reusable,
+        min_width=min_width,
+        min_length=min_length,
+        material_grade=material_grade,
+        thickness=thickness,
+    )
+    query = query.offset((page - 1) * page_size).limit(page_size)
     result = await db.execute(query)
     return [(row[0], row[1]) for row in result.all()]
 

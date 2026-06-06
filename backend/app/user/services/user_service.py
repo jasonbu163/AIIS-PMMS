@@ -8,6 +8,7 @@ from app.user.schemas.auth import UserOut as ActorUser
 from app.user.schemas.user import UserCreateIn, UserOut, UserPasswordUpdateIn, UserUpdateIn
 from common.error_codes import ErrorCode
 from common.exceptions import BusinessException
+from common.pagination import PageData, PageMeta, normalize_page
 from core.security import hash_password, verify_password
 from settings import get_settings
 
@@ -94,6 +95,33 @@ async def list_users(db: AsyncSession, *, actor: ActorUser) -> list[UserOut]:
         ErrorCode.USER_PERMISSION_DENIED,
         code=403,
         http_status_code=403,
+    )
+
+
+async def page_users(
+    db: AsyncSession,
+    *,
+    actor: ActorUser,
+    page: int = 1,
+    page_size: int = 20,
+) -> PageData[UserOut]:
+    page, page_size = normalize_page(page, page_size)
+    if _is_root_actor(actor):
+        roles = None
+    elif actor.role == "admin":
+        roles = ORDINARY_ROLES
+    else:
+        raise BusinessException(
+            ErrorCode.USER_PERMISSION_DENIED,
+            code=403,
+            http_status_code=403,
+        )
+
+    total = await user_crud.count_users(db, roles=roles)
+    users = await user_crud.page_users(db, page=page, page_size=page_size, roles=roles)
+    return PageData(
+        items=[_to_user_out(user) for user in users],
+        meta=PageMeta(page=page, page_size=page_size, total=total),
     )
 
 

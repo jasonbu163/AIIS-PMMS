@@ -15,7 +15,7 @@ This project is intended to answer a specific production question:
 The system should support:
 
 - Authentication and protected backend APIs.
-- Whole-sheet, leftover, and scrap inventory records.
+- Sheet-material inventory records covering whole sheets and reusable leftovers, plus scrap records.
 - Daily laser-cutting material preparation.
 - Exporting a machine-importable `Template.xlsx`.
 - Archiving and parsing laser production report PDFs.
@@ -59,6 +59,7 @@ Current backend defaults:
 - Auth: JWT Bearer, refresh token, bcrypt, and simple role-based access for MVP.
 - Runtime configuration: host-local backend runs from `.env`; Docker development runs from `.env.docker`.
 - Dev environment: `backend/docker-compose.dev.yml` runs both the backend API container and a local SQL Server-compatible development container. The delivered backend executable still connects to the actual site database through `.env`.
+- Timezone: current site runtime uses `Asia/Shanghai` local factory time. Backend and SQL Server hosts should keep this timezone aligned; API timestamps are displayed as site-local time.
 
 Because the target database is SQL Server 2016, implementation should keep migrations and queries compatible with SQL Server 2016 unless a newer feature is explicitly approved.
 
@@ -117,7 +118,7 @@ The first backend database should model:
 
 - Users and token revocation records.
 - Material definitions and material grades.
-- Whole-sheet and leftover inventory.
+- Sheet-material inventory items covering whole sheets and leftovers. The first XLSX import/export contract and frontend workflow are sheet-oriented; pipe/profile inventory fields should be planned separately later.
 - Daily cutting preparation orders and preparation items.
 - Exported `Template.xlsx` file metadata.
 - Uploaded production report PDF metadata and parsed metrics.
@@ -137,7 +138,7 @@ The first backend database should model:
 
 ## Current Status
 
-This repository is now in backend-core implementation. The backend skeleton, authentication, Docker dev stack, first material-inventory APIs, protected database maintenance APIs, and daily preparation `Template.xlsx` export are in place.
+This repository is now in backend-core implementation. The backend skeleton, authentication, Docker dev stack, first sheet-material inventory APIs, protected database maintenance APIs, and daily preparation `Template.xlsx` export are in place.
 
 Completed:
 
@@ -149,7 +150,7 @@ Completed:
 - Backend-first direction and tracking plan.
 - P0 backend skeleton and API contract.
 - P1 authentication and root fallback account.
-- P2 material / leftover inventory API first version.
+- P2 sheet-material inventory API first version, covering whole sheets and leftovers.
 - P3 protected database status / initialize / upgrade APIs.
 - P4 daily preparation order, preparation items, source reservation, and `Template.xlsx` export.
 

@@ -4,6 +4,8 @@
 
 This directory records the business design for AIIS-PMMS. The current active implementation tracker is the root [Backend Core Plan](../PLAN.md), which narrows the first build to the laser-cutting remaining-material backend.
 
+Naming note: the overall business loop is still laser-cutting remaining-material management, but the current inventory UI and API materials should call the inventory module "sheet-material inventory" because it covers both whole sheets and leftovers and is currently built around sheet dimensions. Pipe/profile inventory remains a future extension.
+
 The earlier documents in this directory are retained as business context. When they conflict with the root README, `AGENTS.md`, or `PLAN.md`, the current backend-first laser-cutting scope wins.
 
 ## Documents
@@ -24,6 +26,8 @@ The earlier documents in this directory are retained as business context. When t
 ## 中文说明
 
 本目录用于记录 AIIS-PMMS 的业务设计。当前有效实施跟踪以根目录 [后端核心计划](../PLAN.md) 为准，第一版已收敛为激光开料余料管理后端。
+
+命名说明：项目整体业务链路仍是激光开料余料管理闭环，但当前库存模块在前端和接入材料中应显示为“板材物料库存”，因为它同时覆盖整料和余料，并且当前字段围绕板材宽、长、厚度展开。管材、型材等库存能力后续单独规划。
 
 本目录中的早期文档作为业务背景保留；如果它们与根目录 README、`AGENTS.md` 或 `PLAN.md` 冲突，以当前 backend-first 的激光开料范围为准。
 

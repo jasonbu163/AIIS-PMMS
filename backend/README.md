@@ -41,6 +41,8 @@ Rebuild is still required after Dockerfile, base image, ODBC driver, apt package
 
 `mssql-dev` is pinned to `linux/amd64` because the official SQL Server Linux image is AMD64-oriented. On Apple Silicon it may run through Docker Desktop emulation.
 
+The current deployment assumption is a China site runtime. API and SQL Server processes should run with `TZ=Asia/Shanghai` so database `GETDATE()` / SQLAlchemy `func.now()` and backend `datetime.now()` produce the same site-local date and time. Docker dev sets this through `.env.docker` and `docker-compose.dev.yml`; host-local and packaged deployments should keep the OS / SQL Server host timezone aligned with `Asia/Shanghai`.
+
 The backend exposes:
 
 - `GET /health`
@@ -50,6 +52,7 @@ The backend exposes:
 - `POST /api/v1/auth/logout`
 - `GET /api/v1/auth/me`
 - `GET /api/v1/users`
+- `GET /api/v1/users/page`
 - `POST /api/v1/users`
 - `GET /api/v1/users/{username}`
 - `PATCH /api/v1/users/{username}`
@@ -68,6 +71,10 @@ The backend exposes:
 - `GET /api/v1/materials`
 - `POST /api/v1/inventory-items`
 - `GET /api/v1/inventory-items`
+- `GET /api/v1/inventory-items/page`
+- `GET /api/v1/inventory-items/by-code`
+- `POST /api/v1/inventory-items/import-xlsx`
+- `POST /api/v1/inventory-items/export-xlsx`
 - `PATCH /api/v1/inventory-items/{inventory_item_id}`
 - `POST /api/v1/inventory-items/{inventory_item_id}/void`
 

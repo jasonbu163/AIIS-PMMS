@@ -39,7 +39,7 @@ Daily / monthly / performance settlement data
 Prioritize:
 
 - Dashboard: material utilization, daily productivity, cutting duration, cutting length, piercing count, scrap rate, leftover trend.
-- Material / leftover management: whole sheets, leftovers, material, thickness, width, length, quantity, source, status, reusability, location.
+- Sheet-material inventory management: whole sheets and leftovers, material, thickness, width, length, quantity, source, status, reusability, and location. Current inventory UI wording should use sheet-material inventory; pipe/profile inventory is a later extension.
 - Daily preparation: generate machine-importable `Template.xlsx` from today's tasks and leftover inventory.
 - Production report import: upload laser-equipment PDF reports and recognize equipment runtime metrics.
 - Laser production statistics: replace the manually maintained annual Excel statistics table and support export.

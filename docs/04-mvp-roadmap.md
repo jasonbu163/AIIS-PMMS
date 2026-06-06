@@ -50,8 +50,7 @@ Start with these entities:
 
 - Users and token revocation records.
 - Material grade, thickness, and material specs.
-- Whole-sheet inventory.
-- Leftover inventory.
+- Sheet-material inventory, covering whole sheets and leftovers.
 - Scrap records.
 - Daily preparation order.
 - Preparation details covering Template.xlsx columns: sheet name, drawing path, width, length, material, thickness, quantity.
@@ -64,7 +63,7 @@ Start with these entities:
 Completion criteria:
 
 - Core entities have primary key, business code, status, created time, and updated time.
-- Whole-sheet, leftover, and scrap records trace date, source, material, thickness, width, length, quantity, and status.
+- Sheet-material inventory and scrap records trace date, source, material, thickness, width, length, quantity, and status. Pipe/profile inventory fields are deferred.
 - After daily settlement, original records are generally not edited directly; adjustments keep records or reopen confirmation.
 
 ## Stage 3: Technical Stack
@@ -101,7 +100,7 @@ Current order:
 2. Database migration mechanism: done.
 3. `.env.example` and MSSQL 2016 connection configuration: done.
 4. Health check, unified response, OpenAPI contract, and authentication: done.
-5. Material / leftover inventory API first version: done.
+5. Sheet-material inventory API first version: done.
 6. Next: daily preparation order, source selection, and `Template.xlsx` export.
 
 Completion criteria:
@@ -109,7 +108,7 @@ Completion criteria:
 - Backend can start locally.
 - Minimum test or check commands exist.
 - README records runtime commands.
-- Material / leftover inventory API can be demonstrated; the first preparation/export loop is next.
+- Sheet-material inventory API can be demonstrated; the first preparation/export loop is next.
 
 ## Stage 5: MVP Loop
 
@@ -118,7 +117,7 @@ Goal: complete the first usable business chain:
 ```text
 Daily production task
   ↓
-Whole-sheet / leftover inventory
+Sheet-material inventory: whole sheets / leftovers
   ↓
 Daily preparation order
   ↓
@@ -135,7 +134,7 @@ Monthly settlement
 
 Completion criteria:
 
-- Whole-sheet and leftover inventory can be maintained.
+- Sheet-material inventory for whole sheets and leftovers can be maintained.
 - Machine-importable `Template.xlsx` can be generated.
 - Production report PDFs can be imported and parse status is stored.
 - Leftover and scrap confirmation results can be recorded.

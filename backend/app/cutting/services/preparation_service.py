@@ -21,11 +21,11 @@ from app.cutting.schemas.preparation import (
 from app.material.cruds import inventory_crud, material_crud
 from common.error_codes import ErrorCode
 from common.exceptions import BusinessException
-from settings import get_settings
+from settings import get_project_root, get_settings, get_site_runtime_root
 
 TEMPLATE_HEADERS = ["板材名称", "图纸路径", "宽", "长", "材质", "厚度", "数量"]
-BACKEND_ROOT = Path(__file__).resolve().parents[3]
-PROJECT_ROOT = BACKEND_ROOT.parent
+BACKEND_ROOT = get_site_runtime_root()
+PROJECT_ROOT = get_project_root()
 TEMPLATE_SAMPLE = PROJECT_ROOT / "resources" / "Template.xlsx"
 
 

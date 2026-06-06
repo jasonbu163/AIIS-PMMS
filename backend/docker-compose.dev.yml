@@ -10,6 +10,7 @@ services:
     env_file:
       - .env.docker
     environment:
+      TZ: Asia/Shanghai
       UV_LINK_MODE: copy
     depends_on:
       mssql-dev:
@@ -36,6 +37,7 @@ services:
       - .env.docker
     environment:
       ACCEPT_EULA: "Y"
+      TZ: Asia/Shanghai
     ports:
       - "1433:1433"
     volumes:

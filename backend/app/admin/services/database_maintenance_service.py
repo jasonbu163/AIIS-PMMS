@@ -19,10 +19,10 @@ from app.admin.schemas.database_maintenance import (
 from app.user.cruds import user_crud
 from app.user.models.user import User
 from core.security import hash_password, verify_password
-from settings import get_settings
+from settings import get_packaged_resource_root, get_settings
 
 
-BACKEND_ROOT = Path(__file__).resolve().parents[3]
+BACKEND_ROOT = get_packaged_resource_root()
 ALEMBIC_INI = BACKEND_ROOT / "alembic.ini"
 
 

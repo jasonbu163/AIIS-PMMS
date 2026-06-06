@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.user.schemas.user import UserCreateIn, UserOut, UserPasswordUpdateIn, UserUpdateIn
 from app.user.services import user_service
+from common.pagination import PageData
 from common.response import StandardResponse
 from core.deps import CurrentUser, get_current_user
 from database.session import get_async_db
@@ -18,6 +19,22 @@ async def list_users_api(
     db: AsyncSession = Depends(get_async_db),
 ) -> StandardResponse[list[UserOut]]:
     users = await user_service.list_users(db, actor=current_user.user)
+    return StandardResponse(data=users)
+
+
+@router.get("/page", response_model=StandardResponse[PageData[UserOut]])
+async def page_users_api(
+    page: int = Query(default=1),
+    page_size: int = Query(default=20, alias="pageSize"),
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+) -> StandardResponse[PageData[UserOut]]:
+    users = await user_service.page_users(
+        db,
+        actor=current_user.user,
+        page=page,
+        page_size=page_size,
+    )
     return StandardResponse(data=users)
 
 

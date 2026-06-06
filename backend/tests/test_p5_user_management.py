@@ -82,6 +82,19 @@ async def test_root_can_crud_admin_and_viewer_users(client: httpx.AsyncClient) -
     assert "site-admin" in usernames
     assert "viewer01" in usernames
 
+    page_response = await client.get(
+        "/api/v1/users/page",
+        headers=headers,
+        params={"page": 1, "pageSize": 2},
+    )
+    assert page_response.status_code == 200
+    page_data = page_response.json()["data"]
+    assert page_data["meta"] == {"page": 1, "pageSize": 2, "total": 3}
+    assert [user["username"] for user in page_data["items"]] == [
+        os.environ["BOOTSTRAP_ROOT_USERNAME"],
+        "site-admin",
+    ]
+
     update_response = await client.patch(
         "/api/v1/users/site-admin",
         headers=headers,
@@ -182,6 +195,16 @@ async def test_admin_can_crud_only_ordinary_users(client: httpx.AsyncClient) -> 
     list_response = await client.get("/api/v1/users", headers=admin_headers)
     assert list_response.status_code == 200
     assert [user["username"] for user in list_response.json()["data"]] == ["viewer01"]
+
+    page_response = await client.get(
+        "/api/v1/users/page",
+        headers=admin_headers,
+        params={"page": 1, "pageSize": 20},
+    )
+    assert page_response.status_code == 200
+    page_data = page_response.json()["data"]
+    assert page_data["meta"] == {"page": 1, "pageSize": 20, "total": 1}
+    assert [user["username"] for user in page_data["items"]] == ["viewer01"]
 
     update_response = await client.patch(
         "/api/v1/users/viewer01",

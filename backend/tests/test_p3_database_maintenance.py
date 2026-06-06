@@ -87,7 +87,7 @@ async def test_database_initialize_is_idempotent(client: httpx.AsyncClient) -> N
     assert status_response.status_code == 200
     status = status_response.json()["data"]
     assert status["schemaManaged"] is False
-    assert status["targetRevision"] == "0003_preparation_export"
+    assert status["targetRevision"] == "0006_inventory_spec_import"
 
     first_response = await client.post(
         "/api/v1/admin/database/initialize",

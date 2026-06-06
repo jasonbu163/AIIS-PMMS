@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import os
+from io import BytesIO
 
 import httpx
+from openpyxl import Workbook, load_workbook
 
 
 async def login_headers(client: httpx.AsyncClient) -> dict[str, str]:
@@ -58,6 +60,9 @@ async def test_material_and_inventory_crud(client: httpx.AsyncClient) -> None:
     assert inventory["status"] == "available"
     assert inventory["materialGrade"] == "Q235"
     assert inventory["location"] == "A-01"
+    assert inventory["inventoryCode"].startswith("RM:Q235-1200x800x2.5-")
+    assert inventory["createdAt"]
+    assert inventory["updatedAt"]
 
     query_response = await client.get(
         "/api/v1/inventory-items",
@@ -75,6 +80,25 @@ async def test_material_and_inventory_crud(client: httpx.AsyncClient) -> None:
     items = query_response.json()["data"]
     assert len(items) == 1
     assert items[0]["id"] == inventory["id"]
+    assert items[0]["createdAt"]
+    assert items[0]["updatedAt"]
+
+    page_response = await client.get(
+        "/api/v1/inventory-items/page",
+        headers=headers,
+        params={
+            "page": 1,
+            "pageSize": 20,
+            "inventoryType": "leftover",
+            "status": "available",
+        },
+    )
+    assert page_response.status_code == 200
+    page_data = page_response.json()["data"]
+    assert page_data["meta"] == {"page": 1, "pageSize": 20, "total": 1}
+    assert [item["id"] for item in page_data["items"]] == [inventory["id"]]
+    assert page_data["items"][0]["createdAt"]
+    assert page_data["items"][0]["updatedAt"]
 
     update_response = await client.patch(
         f"/api/v1/inventory-items/{inventory['id']}",
@@ -97,6 +121,211 @@ async def test_material_and_inventory_crud(client: httpx.AsyncClient) -> None:
     )
     assert void_response.status_code == 200
     assert void_response.json()["data"]["status"] == "voided"
+
+
+def build_inventory_xlsx(rows: list[list[object]]) -> bytes:
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.append(
+        [
+            "板材名称",
+            "图纸路径",
+            "宽",
+            "长",
+            "材质",
+            "厚度",
+            "数量",
+            "使用数量",
+        ]
+    )
+    for row in rows:
+        worksheet.append(row)
+    output = BytesIO()
+    workbook.save(output)
+    return output.getvalue()
+
+
+async def test_inventory_xlsx_import_export_and_code_lookup(
+    client: httpx.AsyncClient,
+) -> None:
+    headers = await login_headers(client)
+    content = build_inventory_xlsx(
+        [
+            ["Sheet-A", "", 1200, 800, "Q235", 3, 10, 3],
+            ["Sheet-B", "/drawings/sheet-b.dxf", 1500, 600, "Q345", 4, 2, 0],
+        ]
+    )
+
+    dry_run_response = await client.post(
+        "/api/v1/inventory-items/import-xlsx",
+        headers=headers,
+        params={"dryRun": "true"},
+        files={
+            "file": (
+                "inventory.xlsx",
+                content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+    )
+    assert dry_run_response.status_code == 200
+    dry_run = dry_run_response.json()["data"]
+    assert dry_run["dryRun"] is True
+    assert dry_run["created"] == 2
+    assert dry_run["updated"] == 0
+    assert dry_run["errors"] == []
+    assert dry_run["previewRows"][0]["usedQuantity"] == 3
+    assert "库存数 10 - 使用数量 3 = 7" in dry_run["previewRows"][0]["remark"]
+
+    import_response = await client.post(
+        "/api/v1/inventory-items/import-xlsx",
+        headers=headers,
+        params={"dryRun": "false"},
+        files={
+            "file": (
+                "inventory.xlsx",
+                content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+    )
+    assert import_response.status_code == 200
+    imported = import_response.json()["data"]
+    assert imported["created"] == 2
+    assert imported["updated"] == 0
+
+    page_response = await client.get(
+        "/api/v1/inventory-items/page",
+        headers=headers,
+        params={"page": 1, "pageSize": 20},
+    )
+    assert page_response.status_code == 200
+    items = page_response.json()["data"]["items"]
+    q235_item = next(item for item in items if item["materialGrade"] == "Q235")
+    assert q235_item["inventoryCode"].startswith("RM:Q235-1200x800x3-")
+    assert q235_item["quantity"] == 7
+    assert "未匹配到库存" in q235_item["remark"]
+
+    lookup_response = await client.get(
+        "/api/v1/inventory-items/by-code",
+        headers=headers,
+        params={"inventoryCode": q235_item["inventoryCode"]},
+    )
+    assert lookup_response.status_code == 200
+    assert lookup_response.json()["data"]["id"] == q235_item["id"]
+    assert lookup_response.json()["data"]["createdAt"]
+    assert lookup_response.json()["data"]["updatedAt"]
+
+    update_response = await client.patch(
+        f"/api/v1/inventory-items/{q235_item['id']}",
+        headers=headers,
+        json={
+            "quantity": 8,
+            "remark": "manual review",
+            "location": "C-09",
+            "status": "reserved",
+        },
+    )
+    assert update_response.status_code == 200
+    update_result = update_response.json()["data"]
+    assert update_result["remark"] == "manual review"
+
+    updated_lookup_response = await client.get(
+        "/api/v1/inventory-items/by-code",
+        headers=headers,
+        params={"inventoryCode": q235_item["inventoryCode"]},
+    )
+    assert updated_lookup_response.status_code == 200
+    updated_item = updated_lookup_response.json()["data"]
+    assert updated_item["quantity"] == 8
+    assert updated_item["location"] == "C-09"
+    assert updated_item["status"] == "reserved"
+
+    consume_content = build_inventory_xlsx(
+        [
+            ["Ignored-A", "/ignored/a.dxf", 1200, 800, "Q235", 3, 99, 3],
+            ["Ignored-B", "/ignored/b.dxf", 1500, 600, "Q345", 4, 99, 5],
+        ]
+    )
+    consume_response = await client.post(
+        "/api/v1/inventory-items/import-xlsx",
+        headers=headers,
+        params={"dryRun": "false"},
+        files={
+            "file": (
+                "inventory-consume.xlsx",
+                consume_content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+    )
+    assert consume_response.status_code == 200
+    consumed = consume_response.json()["data"]
+    assert consumed["created"] == 0
+    assert consumed["updated"] == 2
+
+    consumed_lookup_response = await client.get(
+        "/api/v1/inventory-items/by-code",
+        headers=headers,
+        params={"inventoryCode": q235_item["inventoryCode"]},
+    )
+    assert consumed_lookup_response.status_code == 200
+    consumed_item = consumed_lookup_response.json()["data"]
+    assert consumed_item["quantity"] == 5
+    assert consumed_item["remark"] == "本次操作使用数量 3，库存数 8 - 3 = 5。"
+
+    export_response = await client.post(
+        "/api/v1/inventory-items/export-xlsx",
+        headers=headers,
+        json={"inventoryCodes": [q235_item["inventoryCode"]]},
+    )
+    assert export_response.status_code == 200
+    workbook = load_workbook(BytesIO(export_response.content), read_only=True)
+    worksheet = workbook.active
+    rows = list(worksheet.iter_rows(values_only=True))
+    assert rows[0] == (
+        "板材名称",
+        "图纸路径",
+        "宽",
+        "长",
+        "材质",
+        "厚度",
+        "数量",
+    )
+    assert rows[1][0] == q235_item["inventoryCode"]
+    assert rows[1][1] in (None, "")
+    assert rows[1][4] == "Q235"
+    assert rows[1][6] == 5
+
+
+async def test_inventory_xlsx_limits(client: httpx.AsyncClient) -> None:
+    headers = await login_headers(client)
+    too_many_rows = [
+        ["Sheet-A", "/drawings/sheet-a.dxf", 1200, 800, "Q235", 3, 1, 0]
+        for _ in range(201)
+    ]
+    import_response = await client.post(
+        "/api/v1/inventory-items/import-xlsx",
+        headers=headers,
+        params={"dryRun": "true"},
+        files={
+            "file": (
+                "inventory-too-large.xlsx",
+                build_inventory_xlsx(too_many_rows),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+    )
+    assert import_response.status_code == 200
+    assert import_response.json()["errorCode"] == "inventory_xlsx_limit_exceeded"
+
+    export_response = await client.post(
+        "/api/v1/inventory-items/export-xlsx",
+        headers=headers,
+        json={"inventoryCodes": [f"RM:TEST-{index}" for index in range(201)]},
+    )
+    assert export_response.status_code == 200
+    assert export_response.json()["errorCode"] == "inventory_xlsx_limit_exceeded"
 
 
 async def test_material_inventory_requires_auth(client: httpx.AsyncClient) -> None:
