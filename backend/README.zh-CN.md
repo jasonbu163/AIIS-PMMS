@@ -41,6 +41,25 @@ docker compose -f docker-compose.dev.yml restart api
 
 `mssql-dev` 固定为 `linux/amd64`，因为官方 SQL Server Linux 镜像主要面向 AMD64。Apple Silicon 上可能通过 Docker Desktop 仿真运行。
 
+用于打包后端测试的独立 MSSQL 模拟库：
+
+```bash
+docker compose -f docker-compose.mssql.yml up -d
+```
+
+当后端以打包后的可执行文件运行、且真实现场 SQL Server 暂时无法用于测试时，使用这个入口。在打包后端的 `.env` 中，将数据库配置指向宿主机发布的容器端口：
+
+```env
+DB_HOST=127.0.0.1
+DB_PORT=1433
+DB_USER=sa
+DB_PASSWORD=AIIS_PMMS_Dev_789!
+```
+
+这个独立容器只作为模拟数据库。它为了本地可用性使用 SQL Server 2022；生产 / 现场兼容性目标仍是 Microsoft SQL Server 2016，真实目标数据库可用后仍必须再验证。
+
+`docker-compose.mssql.yml` 默认读取 `.env.mssql.example`。只有需要保留本地覆盖配置、且不提交到 Git 时，才复制为 `.env.mssql`。
+
 当前部署假设是中国现场运行时。API 和 SQL Server 进程应使用 `TZ=Asia/Shanghai`，使数据库 `GETDATE()` / SQLAlchemy `func.now()` 与后端 `datetime.now()` 产生一致的现场本地日期时间。Docker dev 通过 `.env.docker` 和 `docker-compose.dev.yml` 设置；宿主机本地运行和打包部署应保持 OS / SQL Server 主机时区与 `Asia/Shanghai` 对齐。
 
 后端暴露：
@@ -127,6 +146,8 @@ uv run python scripts/reset_root_password.py
 | `.env` | 宿主机本地真实运行配置 | 已忽略 |
 | `.env.docker.example` | Docker dev 模板 | 已提交 |
 | `.env.docker` | Docker dev 真实运行配置 | 已忽略 |
+| `.env.mssql.example` | 用于打包后端测试的独立 MSSQL 模拟库模板 | 已提交 |
+| `.env.mssql` | 独立 MSSQL 模拟库真实配置 | 已忽略 |
 | `.env.backend.docker.example` | 连接宿主机 / 现场 MSSQL 的 backend-only 容器模板 | 已提交 |
 | `.env.backend.docker` | Backend-only 容器真实运行配置 | 已忽略 |
 

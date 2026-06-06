@@ -41,6 +41,25 @@ Rebuild is still required after Dockerfile, base image, ODBC driver, apt package
 
 `mssql-dev` is pinned to `linux/amd64` because the official SQL Server Linux image is AMD64-oriented. On Apple Silicon it may run through Docker Desktop emulation.
 
+Standalone MSSQL simulation for packaged backend testing:
+
+```bash
+docker compose -f docker-compose.mssql.yml up -d
+```
+
+Use this when the backend is running from the packaged executable and the real site SQL Server is not available for testing. In the packaged backend `.env`, point the database settings at the host-published container port:
+
+```env
+DB_HOST=127.0.0.1
+DB_PORT=1433
+DB_USER=sa
+DB_PASSWORD=AIIS_PMMS_Dev_789!
+```
+
+This standalone container is a simulation database only. It uses SQL Server 2022 for local availability; production/site compatibility still targets Microsoft SQL Server 2016 and must be verified against the real target database when it becomes available.
+
+`docker-compose.mssql.yml` reads `.env.mssql.example` by default. Copy it to `.env.mssql` only when you need local overrides that should stay ignored by Git.
+
 The current deployment assumption is a China site runtime. API and SQL Server processes should run with `TZ=Asia/Shanghai` so database `GETDATE()` / SQLAlchemy `func.now()` and backend `datetime.now()` produce the same site-local date and time. Docker dev sets this through `.env.docker` and `docker-compose.dev.yml`; host-local and packaged deployments should keep the OS / SQL Server host timezone aligned with `Asia/Shanghai`.
 
 The backend exposes:
@@ -127,6 +146,8 @@ The generated workbook keeps the sample column order:
 | `.env` | Host-local real runtime config | ignored |
 | `.env.docker.example` | Docker dev template | committed |
 | `.env.docker` | Docker dev real runtime config | ignored |
+| `.env.mssql.example` | Standalone MSSQL simulation template for packaged backend tests | committed |
+| `.env.mssql` | Standalone MSSQL simulation real config | ignored |
 | `.env.backend.docker.example` | Backend-only container template for host/site MSSQL | committed |
 | `.env.backend.docker` | Backend-only container real runtime config | ignored |
 

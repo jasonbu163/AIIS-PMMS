@@ -69,6 +69,27 @@ MAINTENANCE_TOKEN=change-me-maintenance-token
 
 Do not commit real site `.env` files.
 
+## Packaged Backend with Standalone MSSQL
+
+When the real site SQL Server cannot be used for testing, start the project-owned standalone MSSQL simulation from `backend/`:
+
+```powershell
+docker compose -f docker-compose.mssql.yml up -d
+```
+
+Then configure the packaged backend `.env` to connect through the host-published port:
+
+```env
+DB_HOST=127.0.0.1
+DB_PORT=1433
+DB_USER=sa
+DB_PASSWORD=AIIS_PMMS_Dev_789!
+```
+
+This is suitable for packaged-service smoke tests, maintenance API initialization tests, and API flow checks. It is not a production compatibility proof: the container uses SQL Server 2022, while the site target remains Microsoft SQL Server 2016. Switch the same packaged backend `.env` to the real site host, port, user, and password when the site database is ready.
+
+`docker-compose.mssql.yml` reads `.env.mssql.example` by default. Copy it to `.env.mssql` only when you need local overrides that should stay ignored by Git.
+
 ## Run
 
 From `backend/dist/aiis-pmms-backend/`:

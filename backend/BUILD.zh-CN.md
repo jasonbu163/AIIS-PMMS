@@ -69,6 +69,27 @@ MAINTENANCE_TOKEN=change-me-maintenance-token
 
 真实现场 `.env` 不要提交到 Git。
 
+## 打包后端连接独立 MSSQL
+
+当真实现场 SQL Server 暂时不能用于测试时，可以在 `backend/` 目录启动本项目自带的独立 MSSQL 模拟库：
+
+```powershell
+docker compose -f docker-compose.mssql.yml up -d
+```
+
+然后在打包后端同目录的 `.env` 中，通过宿主机发布端口连接：
+
+```env
+DB_HOST=127.0.0.1
+DB_PORT=1433
+DB_USER=sa
+DB_PASSWORD=AIIS_PMMS_Dev_789!
+```
+
+这种方式适合打包服务冒烟测试、维护 API 初始化测试和 API 流程检查。它不是生产兼容性证明：容器使用 SQL Server 2022，而现场目标仍是 Microsoft SQL Server 2016。现场数据库准备好后，把同一个打包后端 `.env` 切换为真实现场主机、端口、账号和密码即可。
+
+`docker-compose.mssql.yml` 默认读取 `.env.mssql.example`。只有需要保留本地覆盖配置、且不提交到 Git 时，才复制为 `.env.mssql`。
+
 ## 启动
 
 进入 `backend/dist/aiis-pmms-backend/` 后运行：
