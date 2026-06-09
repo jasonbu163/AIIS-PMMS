@@ -5,6 +5,15 @@ from io import BytesIO
 
 import httpx
 from openpyxl import Workbook, load_workbook
+from sqlalchemy import Unicode
+
+from app.cutting.models.preparation import CuttingPreparationOrder
+from app.cutting.models.preparation import CuttingPreparationItem
+from app.cutting.models.preparation import CuttingTemplateExport
+from app.material.models.inventory_item import MaterialInventoryItem
+from app.material.models.material import Material
+from app.user.models.auth_token_revocation import AuthTokenRevocation
+from app.user.models.user import User
 
 
 async def login_headers(client: httpx.AsyncClient) -> dict[str, str]:
@@ -18,6 +27,30 @@ async def login_headers(client: httpx.AsyncClient) -> dict[str, str]:
     assert response.status_code == 200
     token = response.json()["data"]["accessToken"]
     return {"Authorization": f"Bearer {token}"}
+
+
+def test_chinese_business_text_columns_use_unicode() -> None:
+    columns = [
+        Material.__table__.c.material_grade,
+        Material.__table__.c.spec_description,
+        Material.__table__.c.default_unit,
+        MaterialInventoryItem.__table__.c.inventory_code,
+        MaterialInventoryItem.__table__.c.remark,
+        MaterialInventoryItem.__table__.c.source,
+        MaterialInventoryItem.__table__.c.location,
+        CuttingPreparationOrder.__table__.c.created_by,
+        CuttingPreparationItem.__table__.c.sheet_name,
+        CuttingPreparationItem.__table__.c.drawing_path,
+        CuttingPreparationItem.__table__.c.material_grade,
+        CuttingTemplateExport.__table__.c.file_name,
+        CuttingTemplateExport.__table__.c.file_path,
+        CuttingTemplateExport.__table__.c.created_by,
+        User.__table__.c.username,
+        User.__table__.c.display_name,
+        AuthTokenRevocation.__table__.c.reason,
+    ]
+
+    assert all(isinstance(column.type, Unicode) for column in columns)
 
 
 async def test_material_and_inventory_crud(client: httpx.AsyncClient) -> None:
@@ -38,6 +71,38 @@ async def test_material_and_inventory_crud(client: httpx.AsyncClient) -> None:
     assert material["materialGrade"] == "Q235"
     assert material["thickness"] == 2.5
     assert material["enabled"] is True
+
+    material_page_response = await client.get(
+        "/api/v1/materials/page",
+        headers=headers,
+        params={"page": 1, "pageSize": 20, "materialGrade": "Q"},
+    )
+    assert material_page_response.status_code == 200
+    material_page = material_page_response.json()["data"]
+    assert material_page["meta"] == {"page": 1, "pageSize": 20, "total": 1}
+    assert material_page["items"][0]["id"] == material["id"]
+
+    material_detail_response = await client.get(
+        f"/api/v1/materials/{material['id']}",
+        headers=headers,
+    )
+    assert material_detail_response.status_code == 200
+    assert material_detail_response.json()["data"]["id"] == material["id"]
+
+    material_update_response = await client.patch(
+        f"/api/v1/materials/{material['id']}",
+        headers=headers,
+        json={
+            "specDescription": "中文板材规格",
+            "defaultUnit": "张",
+            "enabled": False,
+        },
+    )
+    assert material_update_response.status_code == 200
+    updated_material = material_update_response.json()["data"]
+    assert updated_material["specDescription"] == "中文板材规格"
+    assert updated_material["defaultUnit"] == "张"
+    assert updated_material["enabled"] is False
 
     inventory_response = await client.post(
         "/api/v1/inventory-items",
@@ -63,6 +128,22 @@ async def test_material_and_inventory_crud(client: httpx.AsyncClient) -> None:
     assert inventory["inventoryCode"].startswith("RM:Q235-1200x800x2.5-")
     assert inventory["createdAt"]
     assert inventory["updatedAt"]
+
+    blocked_grade_update_response = await client.patch(
+        f"/api/v1/materials/{material['id']}",
+        headers=headers,
+        json={"materialGrade": "Q235B"},
+    )
+    assert blocked_grade_update_response.status_code == 200
+    assert blocked_grade_update_response.json()["errorCode"] == "material_in_use"
+
+    blocked_thickness_update_response = await client.patch(
+        f"/api/v1/materials/{material['id']}",
+        headers=headers,
+        json={"thickness": 3.0},
+    )
+    assert blocked_thickness_update_response.status_code == 200
+    assert blocked_thickness_update_response.json()["errorCode"] == "material_in_use"
 
     query_response = await client.get(
         "/api/v1/inventory-items",
@@ -99,6 +180,34 @@ async def test_material_and_inventory_crud(client: httpx.AsyncClient) -> None:
     assert [item["id"] for item in page_data["items"]] == [inventory["id"]]
     assert page_data["items"][0]["createdAt"]
     assert page_data["items"][0]["updatedAt"]
+
+    fuzzy_grade_response = await client.get(
+        "/api/v1/inventory-items/page",
+        headers=headers,
+        params={
+            "page": 1,
+            "pageSize": 20,
+            "materialGrade": "Q2",
+        },
+    )
+    assert fuzzy_grade_response.status_code == 200
+    assert [item["id"] for item in fuzzy_grade_response.json()["data"]["items"]] == [
+        inventory["id"]
+    ]
+
+    fuzzy_code_response = await client.get(
+        "/api/v1/inventory-items/page",
+        headers=headers,
+        params={
+            "page": 1,
+            "pageSize": 20,
+            "inventoryCode": "1200x800",
+        },
+    )
+    assert fuzzy_code_response.status_code == 200
+    assert [item["id"] for item in fuzzy_code_response.json()["data"]["items"]] == [
+        inventory["id"]
+    ]
 
     update_response = await client.patch(
         f"/api/v1/inventory-items/{inventory['id']}",

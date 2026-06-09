@@ -75,7 +75,7 @@ def _apply_filters(
     thickness: Optional[float],
 ) -> Select[tuple[MaterialInventoryItem]]:
     if inventory_code is not None:
-        query = query.where(MaterialInventoryItem.inventory_code == inventory_code)
+        query = query.where(MaterialInventoryItem.inventory_code.like(f"%{inventory_code}%"))
     if material_id is not None:
         query = query.where(MaterialInventoryItem.material_id == material_id)
     if inventory_type is not None:
@@ -89,7 +89,7 @@ def _apply_filters(
     if min_length is not None:
         query = query.where(MaterialInventoryItem.length >= min_length)
     if material_grade is not None:
-        query = query.where(Material.material_grade == material_grade)
+        query = query.where(Material.material_grade.like(f"%{material_grade}%"))
     if thickness is not None:
         query = query.where(MaterialInventoryItem.thickness == thickness)
     return query

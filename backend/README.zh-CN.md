@@ -140,6 +140,9 @@ DB_TRUST_SERVER_CERTIFICATE=true
 - `GET /api/v1/cutting-preparations/template-exports/{export_id}/download`
 - `POST /api/v1/materials`
 - `GET /api/v1/materials`
+- `GET /api/v1/materials/page`
+- `GET /api/v1/materials/{material_id}`
+- `PATCH /api/v1/materials/{material_id}`
 - `POST /api/v1/inventory-items`
 - `GET /api/v1/inventory-items`
 - `GET /api/v1/inventory-items/page`

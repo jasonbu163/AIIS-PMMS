@@ -15,6 +15,7 @@ class ErrorCode(str, Enum):
     INVALID_OLD_PASSWORD = "invalid_old_password"
     MATERIAL_NOT_FOUND = "material_not_found"
     MATERIAL_ALREADY_EXISTS = "material_already_exists"
+    MATERIAL_IN_USE = "material_in_use"
     INVENTORY_ITEM_NOT_FOUND = "inventory_item_not_found"
     INVENTORY_CODE_ALREADY_EXISTS = "inventory_code_already_exists"
     INVENTORY_XLSX_INVALID = "inventory_xlsx_invalid"

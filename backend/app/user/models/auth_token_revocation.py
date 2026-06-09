@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, String
+from sqlalchemy import DateTime, String, Unicode
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database.base import Base
@@ -16,4 +16,4 @@ class AuthTokenRevocation(Base):
     token_type: Mapped[str] = mapped_column(String(16), nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     revoked_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    reason: Mapped[str] = mapped_column(String(100), nullable=False)
+    reason: Mapped[str] = mapped_column(Unicode(100), nullable=False)
