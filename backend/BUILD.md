@@ -45,7 +45,10 @@ Expected important files:
 - `aiis-pmms-backend.exe`
 - `.env` or `.env.example`
 - `storage/exports/templates/`
-- bundled `alembic.ini`, `alembic/`, and `resources/Template.xlsx`
+- bundled `alembic.ini` and `alembic/`
+- optional `resources/Template.xlsx` when the sample template exists
+
+`resources/Template.xlsx` is a sample export template, not a hard packaging dependency. When it is missing, the backend export flow creates a basic workbook from the code-defined headers.
 
 ## Site Configuration
 
@@ -128,6 +131,6 @@ For sites that can only use the packaged service, enable the protected maintenan
 ## Common Failures
 
 - `No module named PyInstaller`: run the build command with `--with pyinstaller`.
-- `打包产物缺少以下内容`: verify that `alembic.ini`, `alembic/`, and `resources/Template.xlsx` exist, then check whether PyInstaller was interrupted by permissions or security software.
+- `打包产物缺少以下内容`: verify that `alembic.ini` and `alembic/` exist, then check whether PyInstaller was interrupted by permissions or security software. `resources/Template.xlsx` is optional and does not block packaging.
 - SQL Server connection fails: install the ODBC driver named in `DB_DRIVER`, then verify host, port, user, password, and SQL Server TCP settings.
 - Maintenance API returns disabled: set `ENABLE_MAINTENANCE_API=true` only during controlled initialization or upgrade, then disable it again.

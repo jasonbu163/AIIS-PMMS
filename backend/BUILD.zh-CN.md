@@ -45,7 +45,10 @@ backend/dist/aiis-pmms-backend/
 - `aiis-pmms-backend.exe`
 - `.env` 或 `.env.example`
 - `storage/exports/templates/`
-- 已打入包内的 `alembic.ini`、`alembic/` 和 `resources/Template.xlsx`
+- 已打入包内的 `alembic.ini` 和 `alembic/`
+- 可选：存在样例文件时打入包内的 `resources/Template.xlsx`
+
+`resources/Template.xlsx` 是设备导出样例模板，不是打包硬依赖。缺少该文件时，后端导出功能会使用代码内置表头生成基础工作簿。
 
 ## 现场配置
 
@@ -128,6 +131,6 @@ uv run alembic upgrade head
 ## 常见问题
 
 - `No module named PyInstaller`：使用带 `--with pyinstaller` 的打包命令。
-- `打包产物缺少以下内容`：检查 `alembic.ini`、`alembic/`、`resources/Template.xlsx` 是否存在，并确认 PyInstaller 命令没有被安全软件或权限策略中断。
+- `打包产物缺少以下内容`：检查 `alembic.ini`、`alembic/` 是否存在，并确认 PyInstaller 命令没有被安全软件或权限策略中断。`resources/Template.xlsx` 是可选样例模板，缺失不会阻止打包。
 - SQL Server 连接失败：安装 `.env` 中 `DB_DRIVER` 指定的 ODBC 驱动，并检查主机、端口、账号、密码和 SQL Server TCP 设置。
 - 维护 API 提示未启用：只在受控初始化或升级期间设置 `ENABLE_MAINTENANCE_API=true`，完成后再关闭。

@@ -3,7 +3,8 @@ AIIS-PMMS 后端打包脚本。
 
 打包目标：
     - 使用 PyInstaller 打包生产入口 main.py。
-    - 将 Alembic 迁移目录和 Template.xlsx 样例模板打入可执行包。
+    - 将 Alembic 迁移目录打入可执行包。
+    - 如存在 Template.xlsx 样例模板，则一并打入包内；不存在时由业务代码生成基础表头。
     - 在 dist 目录准备现场可编辑配置文件和运行期 storage 目录。
 """
 
@@ -30,8 +31,8 @@ REQUIRED_FILES = [
     BACKEND_ROOT / ".env.example",
     BACKEND_ROOT / "alembic.ini",
     BACKEND_ROOT / "alembic",
-    PROJECT_ROOT / "resources" / "Template.xlsx",
 ]
+OPTIONAL_TEMPLATE = PROJECT_ROOT / "resources" / "Template.xlsx"
 HIDDEN_IMPORTS = [
     "aioodbc",
     "aiosqlite",
@@ -94,6 +95,10 @@ def _ensure_build_environment(*, include_env: bool) -> None:
     if missing:
         raise FileNotFoundError("以下打包必需文件不存在：\n" + "\n".join(missing))
 
+    if not OPTIONAL_TEMPLATE.exists():
+        print("提示：resources/Template.xlsx 不存在，本次跳过样例模板打包。")
+        print("      导出 Template.xlsx 时会使用代码内置表头生成基础工作簿。")
+
 
 def _run_pyinstaller() -> None:
     print("步骤 3/5：执行 PyInstaller 打包生产入口 main.py...")
@@ -117,9 +122,9 @@ def _run_pyinstaller() -> None:
         _add_data(BACKEND_ROOT / "alembic.ini", "."),
         "--add-data",
         _add_data(BACKEND_ROOT / "alembic", "alembic"),
-        "--add-data",
-        _add_data(PROJECT_ROOT / "resources" / "Template.xlsx", "resources"),
     ]
+    if OPTIONAL_TEMPLATE.exists():
+        command.extend(["--add-data", _add_data(OPTIONAL_TEMPLATE, "resources")])
     for module_name in HIDDEN_IMPORTS:
         command.extend(["--hidden-import", module_name])
     for package_name in COLLECT_SUBMODULES:
@@ -164,12 +169,15 @@ def _verify_output(*, include_env: bool) -> None:
     }
     missing = [f"{name}: {path}" for name, path in checks.items() if not path.exists()]
 
-    for relative_path in ("alembic.ini", "alembic", "resources/Template.xlsx"):
+    for relative_path in ("alembic.ini", "alembic"):
         if not _packaged_data_exists(relative_path):
             missing.append(f"包内资源: {relative_path}")
 
     if missing:
         raise RuntimeError("打包产物缺少以下内容：\n" + "\n".join(missing))
+
+    if OPTIONAL_TEMPLATE.exists() and not _packaged_data_exists("resources/Template.xlsx"):
+        print("提示：未在产物中检测到 resources/Template.xlsx，导出时会使用代码内置表头。")
 
 
 def main() -> int:
