@@ -30,6 +30,8 @@ uv run --with pyinstaller python build.py --include-env
 
 Without `--include-env`, the package contains `.env.example` only. Rename or copy it to `.env` before running at the site.
 
+The build script prints each step in Chinese: checking PyInstaller and required resources, cleaning old outputs, running PyInstaller, preparing site configuration and storage directories, and validating the package structure. It also adds common Windows packaging dynamic imports for SQLAlchemy MSSQL, Uvicorn, ODBC, and openpyxl.
+
 ## Output
 
 The build output is:
@@ -126,5 +128,6 @@ For sites that can only use the packaged service, enable the protected maintenan
 ## Common Failures
 
 - `No module named PyInstaller`: run the build command with `--with pyinstaller`.
+- `打包产物缺少以下内容`: verify that `alembic.ini`, `alembic/`, and `resources/Template.xlsx` exist, then check whether PyInstaller was interrupted by permissions or security software.
 - SQL Server connection fails: install the ODBC driver named in `DB_DRIVER`, then verify host, port, user, password, and SQL Server TCP settings.
 - Maintenance API returns disabled: set `ENABLE_MAINTENANCE_API=true` only during controlled initialization or upgrade, then disable it again.

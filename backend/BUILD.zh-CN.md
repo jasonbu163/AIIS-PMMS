@@ -30,6 +30,8 @@ uv run --with pyinstaller python build.py --include-env
 
 不加 `--include-env` 时，产物只包含 `.env.example`。现场运行前请复制或重命名为 `.env` 并填写真实配置。
 
+打包脚本会按中文步骤输出当前流程：检查 PyInstaller 和必要资源、清理旧产物、执行 PyInstaller、整理现场配置与 storage 目录、校验产物结构。脚本也会补充 SQLAlchemy MSSQL、Uvicorn、ODBC、openpyxl 等 Windows 打包常见动态导入。
+
 ## 产物目录
 
 打包输出目录：
@@ -126,5 +128,6 @@ uv run alembic upgrade head
 ## 常见问题
 
 - `No module named PyInstaller`：使用带 `--with pyinstaller` 的打包命令。
+- `打包产物缺少以下内容`：检查 `alembic.ini`、`alembic/`、`resources/Template.xlsx` 是否存在，并确认 PyInstaller 命令没有被安全软件或权限策略中断。
 - SQL Server 连接失败：安装 `.env` 中 `DB_DRIVER` 指定的 ODBC 驱动，并检查主机、端口、账号、密码和 SQL Server TCP 设置。
 - 维护 API 提示未启用：只在受控初始化或升级期间设置 `ENABLE_MAINTENANCE_API=true`，完成后再关闭。
