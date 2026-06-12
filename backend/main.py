@@ -3,6 +3,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.router import router as api_router
@@ -36,6 +37,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+settings = get_settings()
+if settings.cors_origin_list:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origin_list,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
 
 @app.exception_handler(BusinessException)
 async def business_exception_handler(
@@ -58,7 +69,7 @@ async def health() -> StandardResponse[dict[str, str]]:
     return StandardResponse(data={"status": "ok"})
 
 
-app.include_router(api_router, prefix=get_settings().api_prefix)
+app.include_router(api_router, prefix=settings.api_prefix)
 
 
 if __name__ == "__main__":

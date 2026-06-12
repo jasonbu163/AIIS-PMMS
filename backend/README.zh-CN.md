@@ -114,6 +114,14 @@ DB_TRUST_SERVER_CERTIFICATE=true
 
 当前部署假设是中国现场运行时。API 和 SQL Server 进程应使用 `TZ=Asia/Shanghai`，使数据库 `GETDATE()` / SQLAlchemy `func.now()` 与后端 `datetime.now()` 产生一致的现场本地日期时间。Docker dev 通过 `.env.docker` 和 `docker-compose.dev.yml` 设置；宿主机本地运行和打包部署应保持 OS / SQL Server 主机时区与 `Asia/Shanghai` 对齐。
 
+默认不启用 CORS。需要浏览器跨域访问后端 API 时，设置 `CORS_ORIGINS` 为逗号分隔的来源白名单，例如：
+
+```env
+CORS_ORIGINS=http://127.0.0.1:5173,http://localhost:5173
+```
+
+如果前后端由同一 origin 提供服务，可以保持为空。现场部署应优先填写明确的内网地址或域名来源，不建议直接使用 `*`。
+
 后端暴露：
 
 - `GET /health`

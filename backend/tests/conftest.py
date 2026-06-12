@@ -13,6 +13,7 @@ os.environ.setdefault("BOOTSTRAP_ROOT_USERNAME", "root")
 os.environ.setdefault("BOOTSTRAP_ROOT_PASSWORD", "#789@root")
 os.environ.setdefault("ENABLE_MAINTENANCE_API", "true")
 os.environ.setdefault("MAINTENANCE_TOKEN", "test-maintenance-token")
+os.environ.setdefault("CORS_ORIGINS", "http://127.0.0.1:5173")
 
 from main import app  # noqa: E402
 
@@ -27,6 +28,7 @@ async def client(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("BOOTSTRAP_ROOT_PASSWORD", "#789@root")
     monkeypatch.setenv("ENABLE_MAINTENANCE_API", "true")
     monkeypatch.setenv("MAINTENANCE_TOKEN", "test-maintenance-token")
+    monkeypatch.setenv("CORS_ORIGINS", "http://127.0.0.1:5173")
     transport = httpx.ASGITransport(app=app)
     async with app.router.lifespan_context(app):
         async with httpx.AsyncClient(

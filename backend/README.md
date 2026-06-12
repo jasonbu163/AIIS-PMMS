@@ -114,6 +114,14 @@ If the site can only operate the packaged service and cannot run source-level co
 
 The current deployment assumption is a China site runtime. API and SQL Server processes should run with `TZ=Asia/Shanghai` so database `GETDATE()` / SQLAlchemy `func.now()` and backend `datetime.now()` produce the same site-local date and time. Docker dev sets this through `.env.docker` and `docker-compose.dev.yml`; host-local and packaged deployments should keep the OS / SQL Server host timezone aligned with `Asia/Shanghai`.
 
+CORS is disabled unless `CORS_ORIGINS` is configured. Set it to a comma-separated list of browser origins that may call the API, for example:
+
+```env
+CORS_ORIGINS=http://127.0.0.1:5173,http://localhost:5173
+```
+
+Keep it empty when the frontend and backend are served from the same origin. For site deployments, prefer explicit LAN or domain origins instead of `*`.
+
 The backend exposes:
 
 - `GET /health`

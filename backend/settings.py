@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     api_prefix: str = "/api/v1"
     server_host: str = "0.0.0.0"
     server_port: int = 8000
+    cors_origins: str = ""
 
     database_url: str = ""
     db_dialect: str = "mssql"
@@ -64,6 +65,10 @@ class Settings(BaseSettings):
         from database.url_builder import build_async_database_url
 
         return build_async_database_url()
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
 
 @lru_cache
