@@ -19,6 +19,7 @@ from app.material.schemas.inventory import (
 )
 from common.error_codes import ErrorCode
 from common.exceptions import BusinessException
+from common.log import logger
 from common.pagination import PageData, PageMeta, normalize_page
 
 ALLOWED_STATUS = {"available", "reserved", "consumed", "scrapped", "voided"}
@@ -172,6 +173,15 @@ async def create_inventory_item(
         await _assign_generated_inventory_code(item, material_grade=material.material_grade)
     await db.commit()
     await db.refresh(item)
+    logger.info(
+        "inventory_item_created id={} code={} material_id={} type={} quantity={} status={}",
+        item.id,
+        item.inventory_code,
+        item.material_id,
+        item.inventory_type,
+        item.quantity,
+        item.status,
+    )
     return to_inventory_out(item, material.material_grade)
 
 
@@ -270,6 +280,8 @@ async def update_inventory_item(
     if item is None:
         raise BusinessException(ErrorCode.INVENTORY_ITEM_NOT_FOUND)
 
+    old_status = item.status
+    old_quantity = item.quantity
     update_data = data.model_dump(exclude_unset=True)
     status = update_data.get("status")
     if status is not None and status not in ALLOWED_STATUS:
@@ -282,6 +294,16 @@ async def update_inventory_item(
         raise BusinessException(ErrorCode.MATERIAL_NOT_FOUND)
     await db.commit()
     await db.refresh(item)
+    logger.info(
+        "inventory_item_updated id={} code={} old_status={} new_status={} "
+        "old_quantity={} new_quantity={}",
+        item.id,
+        item.inventory_code,
+        old_status,
+        item.status,
+        old_quantity,
+        item.quantity,
+    )
     return to_inventory_out(item, material.material_grade)
 
 
@@ -499,6 +521,16 @@ async def import_inventory_xlsx(
         preview_rows=preview_rows,
     )
     if dry_run or errors:
+        logger.info(
+            "inventory_xlsx_import_preview dry_run={} total_rows={} valid_rows={} "
+            "created={} updated={} skipped={}",
+            dry_run,
+            result.total_rows,
+            result.valid_rows,
+            result.created,
+            result.updated,
+            result.skipped,
+        )
         return result
 
     created = 0
@@ -555,6 +587,14 @@ async def import_inventory_xlsx(
     await db.commit()
     result.created = created
     result.updated = updated
+    logger.info(
+        "inventory_xlsx_import_applied total_rows={} valid_rows={} created={} updated={} skipped={}",
+        result.total_rows,
+        result.valid_rows,
+        result.created,
+        result.updated,
+        result.skipped,
+    )
     return result
 
 
@@ -602,4 +642,5 @@ async def export_inventory_xlsx(
 
     output = BytesIO()
     workbook.save(output)
+    logger.info("inventory_xlsx_exported row_count={}", len(codes))
     return output.getvalue()

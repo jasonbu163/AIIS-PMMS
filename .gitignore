@@ -14,5 +14,6 @@ build/
 __pycache__/
 *.pyc
 storage/
+logs/
 
 /resources

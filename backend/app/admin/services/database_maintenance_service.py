@@ -7,7 +7,6 @@ from typing import Literal
 from alembic import command
 from alembic.config import Config
 from alembic.script import ScriptDirectory
-from loguru import logger
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +15,7 @@ from app.admin.schemas.database_maintenance import (
     DatabaseMaintenanceResultOut,
     DatabaseStatusOut,
 )
+from common.log import logger
 from app.user.cruds import user_crud
 from app.user.models.user import User
 from core.security import hash_password, verify_password

@@ -21,6 +21,7 @@ from app.cutting.schemas.preparation import (
 from app.material.cruds import inventory_crud, material_crud
 from common.error_codes import ErrorCode
 from common.exceptions import BusinessException
+from common.log import logger
 from settings import get_project_root, get_settings, get_site_runtime_root
 
 TEMPLATE_HEADERS = ["板材名称", "图纸路径", "宽", "长", "材质", "厚度", "数量"]
@@ -76,6 +77,12 @@ async def create_order(
         ),
     )
     await db.commit()
+    logger.info(
+        "cutting_preparation_order_created order_id={} date={} actor={}",
+        order.id,
+        order.preparation_date,
+        actor,
+    )
     return await _to_order_out(db, order)
 
 
@@ -130,6 +137,15 @@ async def add_item(
         CuttingPreparationItem(order_id=order_id, **data.model_dump()),
     )
     await db.commit()
+    logger.info(
+        "cutting_preparation_item_added order_id={} source_inventory_item_id={} "
+        "material_grade={} thickness={} quantity={}",
+        order_id,
+        data.source_inventory_item_id,
+        data.material_grade,
+        data.thickness,
+        data.quantity,
+    )
     return await _to_order_out(db, order)
 
 
@@ -201,6 +217,14 @@ async def export_template(
     order.exported_file_id = export.id
     await db.commit()
     await db.refresh(export)
+    logger.info(
+        "cutting_template_exported order_id={} export_id={} row_count={} actor={} file_name={}",
+        order_id,
+        export.id,
+        len(items),
+        actor,
+        file_name,
+    )
     return _to_export_out(export)
 
 

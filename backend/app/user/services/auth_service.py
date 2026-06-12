@@ -10,6 +10,7 @@ from app.user.models.user import User
 from app.user.schemas.auth import TokenOut, UserOut
 from common.error_codes import ErrorCode
 from common.exceptions import BusinessException
+from common.log import logger
 from core.jwt import create_token_pair, decode_token
 from core.security import hash_password, verify_password
 from settings import get_settings
@@ -41,11 +42,14 @@ async def bootstrap_root_user(db: AsyncSession) -> None:
 async def login(db: AsyncSession, username: str, password: str) -> TokenOut:
     user = await user_crud.get_user_by_username(db, username)
     if user is None or not verify_password(password, user.password_hash):
+        logger.warning("auth_login_failed username={} reason=invalid_credentials", username)
         raise BusinessException(ErrorCode.INVALID_CREDENTIALS)
     if user.status != "active":
+        logger.warning("auth_login_failed username={} reason=user_disabled", username)
         raise BusinessException(ErrorCode.USER_DISABLED)
 
     token_pair = create_token_pair(subject=user.username, role=user.role)
+    logger.info("auth_login_success username={} role={}", user.username, user.role)
     return TokenOut(**token_pair)
 
 
@@ -93,3 +97,4 @@ async def logout(db: AsyncSession, access_payload: dict, refresh_token: str) -> 
                 ),
             )
     await db.commit()
+    logger.info("auth_logout username={}", access_payload["sub"])

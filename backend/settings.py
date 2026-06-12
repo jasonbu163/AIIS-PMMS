@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     db_trust_server_certificate: bool = True
     sqlite_database: str = "./pmms-dev.db"
     storage_dir: str = "storage"
+    log_dir: str = "logs"
 
     jwt_secret_key: str = Field(default="change-me")
     jwt_access_token_minutes: int = 60
