@@ -38,6 +38,20 @@ class InventoryItemUpdateIn(ApiSchema):
     reusable: Optional[bool] = None
 
 
+class InventoryItemStockInIn(ApiSchema):
+    quantity: int = Field(ge=1)
+    source: str = "site-stock-in"
+    location: Optional[str] = None
+    remark: Optional[str] = None
+    reusable: Optional[bool] = None
+
+
+class InventoryItemConsumeIn(ApiSchema):
+    quantity: int = Field(ge=1)
+    source: str = "site-consume"
+    remark: Optional[str] = None
+
+
 class InventoryItemOut(ApiSchema):
     id: int
     inventory_code: str
@@ -64,7 +78,7 @@ class InventoryImportError(ApiSchema):
 
 class InventoryImportPreviewRow(ApiSchema):
     row_number: int
-    action: Literal["create", "update"]
+    action: Literal["create", "consume", "stock_in"]
     inventory_code: Optional[str] = None
     material_grade: str
     inventory_type: str
@@ -73,6 +87,7 @@ class InventoryImportPreviewRow(ApiSchema):
     thickness: float
     quantity: int
     used_quantity: int
+    added_quantity: int
     remark: str
     source: str
     location: str

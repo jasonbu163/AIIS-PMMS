@@ -191,6 +191,56 @@ Required protection:
 
 The maintenance endpoints do not provide table clearing, reset, `drop`, or `truncate` behavior.
 
+## Logging
+
+The backend uses `loguru` through `common.log`. Source runs write logs under `backend/logs/` by default, and packaged runs write under `logs/` beside the executable unless `LOG_DIR` is overridden.
+
+Runtime files:
+
+```text
+logs/api.log
+logs/api-error.log
+```
+
+Business logs should use loguru parameterized messages:
+
+```python
+logger.info("inventory_item_updated id={} status={}", item.id, item.status)
+```
+
+`loguru` matches the `{}` placeholders with the following arguments in order, similar to `str.format`. Named placeholders are also allowed:
+
+```python
+logger.info(
+    "inventory_item_updated id={id} status={status}",
+    id=item.id,
+    status=item.status,
+)
+```
+
+Minimum business log detail:
+
+- Start with a stable English event name.
+- Use stable English `key=value` fields.
+- Include actor when available, business object ID/code, action or status, and result.
+- For state or quantity transitions, include old and new values.
+- Never log passwords, tokens, Authorization headers, secrets, full request bodies, or full uploaded file contents.
+
+Examples:
+
+```python
+logger.info("auth_login_success username={} role={}", user.username, user.role)
+logger.info(
+    "inventory_item_updated id={} code={} old_status={} new_status={} old_quantity={} new_quantity={}",
+    item.id,
+    item.inventory_code,
+    old_status,
+    item.status,
+    old_quantity,
+    item.quantity,
+)
+```
+
 ## Template Export
 
 `resources/Template.xlsx` remains the read-only sample contract. Exported files are written under `backend/storage/exports/templates/` and are ignored by Git.

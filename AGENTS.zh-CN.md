@@ -142,6 +142,15 @@ API 响应默认采用统一信封：
 
 业务失败应使用稳定错误码或状态 key，不靠中文文案做客户端判断。
 
+日志是最低可观测契约，不是可有可无的装饰：
+
+- 业务代码必须从 `common.log` 导入 `logger`。
+- 业务日志使用 loguru 参数化写法，不使用 f-string 直接拼接，例如 `logger.info("inventory_item_updated id={} status={}", item.id, item.status)`。
+- 日志第一段应是稳定英文事件名，例如 `auth_login_success`、`inventory_item_updated`、`cutting_template_exported`。
+- 日志字段使用稳定英文 `key=value`。每条关键业务日志至少应能说明操作人（如有）、业务对象、动作或状态、结果。涉及状态或数量变化时，必须记录变化前和变化后。
+- 这是最低详细度：后续可以增加 `request_id`、`user_id`、`client_ip`、耗时或业务专属字段，但不能比这个事实上下文更少。
+- 禁止记录密码、token、Authorization header、密钥、完整请求体或完整上传文件内容。
+
 ## 7. 前端规则
 
 前端默认遵循 `frontend-ui`：

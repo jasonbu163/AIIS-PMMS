@@ -47,17 +47,20 @@ async def get_inventory_item_by_spec(
     width: float,
     length: float,
     thickness: float,
+    inventory_type: Optional[str] = None,
+    excluded_statuses: Optional[set[str]] = None,
 ) -> Optional[MaterialInventoryItem]:
-    result = await db.execute(
-        select(MaterialInventoryItem)
-        .where(
-            MaterialInventoryItem.material_id == material_id,
-            MaterialInventoryItem.width == width,
-            MaterialInventoryItem.length == length,
-            MaterialInventoryItem.thickness == thickness,
-        )
-        .order_by(MaterialInventoryItem.id.asc())
+    query = select(MaterialInventoryItem).where(
+        MaterialInventoryItem.material_id == material_id,
+        MaterialInventoryItem.width == width,
+        MaterialInventoryItem.length == length,
+        MaterialInventoryItem.thickness == thickness,
     )
+    if inventory_type is not None:
+        query = query.where(MaterialInventoryItem.inventory_type == inventory_type)
+    if excluded_statuses:
+        query = query.where(MaterialInventoryItem.status.not_in(excluded_statuses))
+    result = await db.execute(query.order_by(MaterialInventoryItem.id.asc()))
     return result.scalars().first()
 
 

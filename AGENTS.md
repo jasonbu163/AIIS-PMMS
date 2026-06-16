@@ -142,6 +142,15 @@ Default API response envelope:
 
 Business failures should use stable error codes or status keys, not Chinese text for client logic.
 
+Logging is a minimum observability contract, not optional decoration:
+
+- Business code must import `logger` from `common.log`.
+- Use loguru parameterized messages instead of f-strings for business logs, for example `logger.info("inventory_item_updated id={} status={}", item.id, item.status)`.
+- The first token should be a stable English event name such as `auth_login_success`, `inventory_item_updated`, or `cutting_template_exported`.
+- Log fields should use stable English `key=value` names. Each key business log must identify at least the actor when available, the business object, the action or status, and the result. For state or quantity transitions, record both old and new values.
+- This is the minimum level of detail: future logs may add `request_id`, `user_id`, `client_ip`, elapsed time, or domain-specific fields, but should not contain less factual context.
+- Do not log passwords, tokens, Authorization headers, secret keys, complete request bodies, or full uploaded file contents.
+
 ## 7. Frontend Rules
 
 Follow `frontend-ui` by default:

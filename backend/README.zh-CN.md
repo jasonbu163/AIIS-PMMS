@@ -191,6 +191,56 @@ uv run python scripts/reset_root_password.py
 
 维护端点不提供清表、reset、`drop` 或 `truncate` 行为。
 
+## 日志
+
+后端通过 `common.log` 统一使用 `loguru`。源码运行默认写入 `backend/logs/`，打包运行默认写入可执行文件同目录的 `logs/`，除非通过 `LOG_DIR` 覆盖。
+
+运行时文件：
+
+```text
+logs/api.log
+logs/api-error.log
+```
+
+业务日志应使用 loguru 参数化写法：
+
+```python
+logger.info("inventory_item_updated id={} status={}", item.id, item.status)
+```
+
+`loguru` 会按顺序把后面的参数匹配到 `{}` 占位符，类似 `str.format`。也可以使用命名占位符：
+
+```python
+logger.info(
+    "inventory_item_updated id={id} status={status}",
+    id=item.id,
+    status=item.status,
+)
+```
+
+业务日志最低详细度：
+
+- 以稳定英文事件名开头。
+- 使用稳定英文 `key=value` 字段。
+- 包含操作人（如有）、业务对象 ID / 编码、动作或状态、结果。
+- 涉及状态或数量变化时，必须包含变化前和变化后。
+- 禁止记录密码、token、Authorization header、密钥、完整请求体或完整上传文件内容。
+
+示例：
+
+```python
+logger.info("auth_login_success username={} role={}", user.username, user.role)
+logger.info(
+    "inventory_item_updated id={} code={} old_status={} new_status={} old_quantity={} new_quantity={}",
+    item.id,
+    item.inventory_code,
+    old_status,
+    item.status,
+    old_quantity,
+    item.quantity,
+)
+```
+
 ## Template 导出
 
 `resources/Template.xlsx` 保持为只读样例契约。导出文件写入 `backend/storage/exports/templates/`，并被 Git 忽略。

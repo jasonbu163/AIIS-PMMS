@@ -23,6 +23,7 @@ class ErrorCode(str, Enum):
     INVENTORY_EXPORT_EMPTY = "inventory_export_empty"
     INVENTORY_EXPORT_INCOMPLETE = "inventory_export_incomplete"
     INVALID_INVENTORY_STATUS = "invalid_inventory_status"
+    INVALID_INVENTORY_QUANTITY = "invalid_inventory_quantity"
     MAINTENANCE_API_DISABLED = "maintenance_api_disabled"
     INVALID_MAINTENANCE_TOKEN = "invalid_maintenance_token"
     PREPARATION_ORDER_NOT_FOUND = "preparation_order_not_found"

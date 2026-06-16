@@ -7,8 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.material.schemas.inventory import (
     InventoryExportIn,
     InventoryImportResult,
+    InventoryItemConsumeIn,
     InventoryItemCreateIn,
     InventoryItemOut,
+    InventoryItemStockInIn,
     InventoryItemUpdateIn,
 )
 from app.material.services import inventory_service
@@ -145,6 +147,28 @@ async def update_inventory_item_api(
     db: AsyncSession = Depends(get_async_db),
 ) -> StandardResponse[InventoryItemOut]:
     item = await inventory_service.update_inventory_item(db, inventory_item_id, data)
+    return StandardResponse(data=item)
+
+
+@router.post("/{inventory_item_id}/stock-in", response_model=StandardResponse[InventoryItemOut])
+async def stock_in_inventory_item_api(
+    inventory_item_id: int,
+    data: InventoryItemStockInIn,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+) -> StandardResponse[InventoryItemOut]:
+    item = await inventory_service.stock_in_inventory_item(db, inventory_item_id, data)
+    return StandardResponse(data=item)
+
+
+@router.post("/{inventory_item_id}/consume", response_model=StandardResponse[InventoryItemOut])
+async def consume_inventory_item_api(
+    inventory_item_id: int,
+    data: InventoryItemConsumeIn,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+) -> StandardResponse[InventoryItemOut]:
+    item = await inventory_service.consume_inventory_item(db, inventory_item_id, data)
     return StandardResponse(data=item)
 
 
